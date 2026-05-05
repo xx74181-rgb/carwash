@@ -26,7 +26,7 @@ body{font-family:-apple-system,'Helvetica Neue',Helvetica,Arial,sans-serif;font-
 .app-shell{padding-bottom:env(safe-area-inset-bottom)}
 .topbar{display:flex;border-bottom:1.5px solid var(--border);background:var(--bg);position:sticky;top:0;z-index:10;overflow-x:auto;padding-top:env(safe-area-inset-top)}
 .topbar::-webkit-scrollbar{display:none}
-.tab{padding:14px 16px;font-size:14px;cursor:pointer;border-bottom:2.5px solid transparent;color:var(--text2);white-space:nowrap;flex-shrink:0;transition:all 0.15s;user-select:none;min-height:var(--touch);display:flex;align-items:center}
+.tab{padding:12px 10px;font-size:13px;cursor:pointer;border-bottom:2.5px solid transparent;color:var(--text2);white-space:nowrap;flex-shrink:0;transition:all 0.15s;user-select:none;min-height:var(--touch);display:flex;align-items:center}
 .tab.active{color:var(--text);border-bottom-color:var(--green);font-weight:600}
 .tab:active{background:var(--bg2)}
 .screen{display:none;padding:18px;flex:1}
@@ -169,13 +169,13 @@ textarea{resize:vertical;min-height:72px}
 <div class="app-shell">
   <div class="topbar">
     <div class="tab active" onclick="switchTab('today')">今日</div>
-    <div class="tab" onclick="switchTab('search')">查客戶</div>
-    <div class="tab" onclick="switchTab('order')">開單</div>
-    <div class="tab" onclick="switchTab('orders')">訂單管理</div>
-    <div class="tab" onclick="switchTab('history')">車輛紀錄</div>
-    <div class="tab" onclick="switchTab('wallet')">儲值</div>
     <div class="tab" onclick="switchTab('schedule')">排程</div>
+    <div class="tab" onclick="switchTab('search')">客戶</div>
+    <div class="tab" onclick="switchTab('order')">開單</div>
+    <div class="tab" onclick="switchTab('orders')">訂單</div>
+    <div class="tab" onclick="switchTab('wallet')">儲值</div>
     <div class="tab" onclick="switchTab('dashboard')">儀表板</div>
+    <div class="tab" onclick="switchTab('history')">車輛</div>
   </div>
 
   <!-- 今日工作板 -->
@@ -183,54 +183,73 @@ textarea{resize:vertical;min-height:72px}
     <div id="today-content"></div>
   </div>
 
-  <!-- 查客戶 -->
-  <div id="screen-search" class="screen">
-    <div class="section-title">查詢客戶</div>
-    <div class="row" style="margin-bottom:6px">
-      <div class="col"><input id="search-phone" type="tel" placeholder="電話號碼" oninput="liveSearch()" /></div>
+  <!-- 客戶資料 -->
+  <div id="screen-search" class="screen" style="padding:0">
+    <!-- 搜尋列 -->
+    <div style="padding:12px 18px 10px;border-bottom:1px solid var(--border);position:sticky;top:52px;background:var(--bg);z-index:5">
+      <input id="search-q" placeholder="搜尋姓名、電話或車牌" oninput="onSearchQ()" style="width:100%" />
     </div>
-    <div class="row">
-      <div class="col"><input id="search-name" placeholder="姓名搜尋" oninput="liveSearch()" /></div>
-      <button class="btn primary" onclick="doSearch()">查詢</button>
+    <!-- 顯示客戶按鈕 -->
+    <div style="padding:14px 18px;border-bottom:1px solid var(--border)">
+      <button class="btn block" onclick="toggleCustomerList()" id="customer-list-toggle">☰ 顯示所有客戶</button>
     </div>
-    <div id="search-result"></div>
-    <div class="divider"></div>
-    <div class="section-title">新增客戶 & 車輛</div>
-    <div class="row">
-      <div class="col"><label>姓名（可空）</label><input id="new-name" placeholder="王小明" /></div>
-      <div class="col"><label>電話 *</label><input id="new-phone" type="tel" placeholder="0912-345-678" /></div>
-    </div>
-    <div class="row">
-      <div class="col"><label>車牌</label><input id="new-plate" placeholder="ABC-1234" /></div>
-      <div class="col"><label>車型</label>
-        <select id="new-ctype">
-          <option value="轎車">轎車</option>
-          <option value="輕休旅/旅行車">輕休旅/旅行車</option>
-          <option value="休旅車">休旅車</option>
-          <option value="大型休旅車">大型休旅車</option>
-          <option value="商務車/皮卡">商務車/皮卡</option>
-        </select>
+    <!-- 會員清單（預設隱藏） -->
+    <div id="customer-list" style="display:none"></div>
+    <!-- 新增客戶（摺疊） -->
+    <div style="padding:14px 18px;border-top:1px solid var(--border)">
+      <button class="btn block" onclick="toggleNewCustomer()" id="new-customer-toggle">＋ 新增客戶</button>
+      <div id="new-customer-form" style="display:none;margin-top:14px">
+        <div class="row">
+          <div class="col"><label>姓名（可空）</label><input id="new-name" placeholder="王小明" /></div>
+          <div class="col"><label>電話 *</label><input id="new-phone" type="tel" placeholder="0912-345-678" /></div>
+        </div>
+        <div class="row">
+          <div class="col"><label>車牌</label><input id="new-plate" placeholder="ABC1234" /></div>
+          <div class="col"><label>車型</label>
+            <select id="new-ctype">
+              <option value="轎車">轎車</option>
+              <option value="輕休旅/旅行車">輕休旅/旅行車</option>
+              <option value="休旅車">休旅車</option>
+              <option value="大型休旅車">大型休旅車</option>
+              <option value="商務車/皮卡">商務車/皮卡</option>
+              <option value="機車">機車</option>
+              <option value="電動機車">電動機車</option>
+            </select>
+          </div>
+        </div>
+        <div class="row">
+          <div class="col"><label>車況等級</label>
+            <select id="new-cond">
+              <option value="A">A — 良好</option>
+              <option value="B">B — 普通</option>
+              <option value="C">C — 需處理</option>
+            </select>
+          </div>
+        </div>
+        <div class="row">
+          <div class="col"><label>推薦人車號（選填）</label><input id="new-ref-plate" placeholder="輸入推薦人的車牌號碼" /></div>
+        </div>
+        <button class="btn primary block" onclick="addCustomer()">建立客戶</button>
+        <div id="new-msg" style="margin-top:8px"></div>
       </div>
     </div>
-    <div class="row">
-      <div class="col"><label>車況等級</label>
-        <select id="new-cond">
-          <option value="A">A — 良好</option>
-          <option value="B">B — 普通</option>
-          <option value="C">C — 需處理</option>
-        </select>
-      </div>
+    <!-- 客戶詳細（彈出層） -->
+    <div id="customer-detail-overlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.4);z-index:50" onclick="closeCustomerDetail()"></div>
+    <div id="customer-detail-sheet" style="display:none;position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:560px;background:var(--bg);border-radius:20px 20px 0 0;z-index:51;max-height:85vh;overflow-y:auto;padding:20px 18px 32px">
+      <div style="width:36px;height:4px;background:var(--border2);border-radius:2px;margin:0 auto 16px"></div>
+      <div id="customer-detail-body"></div>
     </div>
-    <button class="btn primary block" onclick="addCustomer()">建立客戶</button>
-    <div id="new-msg" style="margin-top:8px"></div>
+    <!-- 搜尋結果（舊邏輯保留，隱藏） -->
+    <div id="search-result" style="display:none"></div>
   </div>
 
   <!-- 開單 -->
   <div id="screen-order" class="screen">
     <div class="section-title">選擇客戶</div>
-    <div class="row">
-      <div class="col"><input id="order-phone" type="tel" placeholder="輸入電話" oninput="fillOrderCustomer()" /></div>
+    <div class="row" style="margin-bottom:4px">
+      <div class="col"><input id="order-search" placeholder="輸入電話或姓名" oninput="fillOrderCustomer()" /></div>
     </div>
+    <div id="order-search-list" style="margin-bottom:6px"></div>
     <div id="order-customer-info"></div>
     <div class="section-title">選擇車輛</div>
     <div id="order-cars" class="chips"><span style="color:var(--text3);font-size:12px">查詢客戶後顯示車輛</span></div>
@@ -264,6 +283,15 @@ textarea{resize:vertical;min-height:72px}
     </div>
     <div id="balance-check" style="margin-bottom:8px"></div>
     <div class="col" style="margin-bottom:12px"><label>備註（選填）</label><textarea id="order-note" placeholder="車況特殊說明、客戶要求..."></textarea></div>
+
+    <div class="section-title">車況照片 — 洗車前</div>
+    <div id="order-photos-before" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px"></div>
+    <label style="display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:14px;border:1.5px dashed var(--border2);border-radius:var(--radius-lg);cursor:pointer;font-size:14px;color:var(--text2);margin-bottom:14px">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M20.94 13A9 9 0 1 1 13 3.06"/><path d="M22 7V3h-4"/><path d="M18 3l4 4"/></svg>
+      拍照 / 選取照片
+      <input type="file" accept="image/*" capture="environment" multiple style="display:none" onchange="addBeforePhotos(this)">
+    </label>
+
     <button class="btn primary block" onclick="createOrder()">確認開單</button>
     <div id="order-msg" style="margin-top:8px"></div>
   </div>
@@ -349,7 +377,13 @@ textarea{resize:vertical;min-height:72px}
         <button class="btn" onclick="monthNav(1)">›</button>
       </div>
       <div style="display:grid;grid-template-columns:repeat(7,1fr);border-bottom:1px solid var(--border)">
-        ${['日','一','二','三','四','五','六'].map(d=>`<div style="text-align:center;font-size:11px;color:var(--text2);padding:6px 0;font-weight:500">${d}</div>`).join('')}
+        <div style="text-align:center;font-size:11px;color:var(--text2);padding:6px 0;font-weight:500">日</div>
+        <div style="text-align:center;font-size:11px;color:var(--text2);padding:6px 0;font-weight:500">一</div>
+        <div style="text-align:center;font-size:11px;color:var(--text2);padding:6px 0;font-weight:500">二</div>
+        <div style="text-align:center;font-size:11px;color:var(--text2);padding:6px 0;font-weight:500">三</div>
+        <div style="text-align:center;font-size:11px;color:var(--text2);padding:6px 0;font-weight:500">四</div>
+        <div style="text-align:center;font-size:11px;color:var(--text2);padding:6px 0;font-weight:500">五</div>
+        <div style="text-align:center;font-size:11px;color:var(--text2);padding:6px 0;font-weight:500">六</div>
       </div>
       <div id="month-grid"></div>
     </div>
@@ -391,13 +425,32 @@ textarea{resize:vertical;min-height:72px}
 </div><!-- end app-shell -->
 <div id="save-indicator">✓ 已儲存</div>
 
+<!-- 排程區塊 detail sheet -->
+<div id="sched-detail-overlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.4);z-index:50" onclick="closeSchedDetail()"></div>
+<div id="sched-detail-sheet" style="display:none;position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:560px;background:var(--bg);border-radius:20px 20px 0 0;z-index:51;padding:20px 18px 32px">
+  <div style="width:36px;height:4px;background:var(--border2);border-radius:2px;margin:0 auto 16px"></div>
+  <div id="sched-detail-title" style="font-size:17px;font-weight:600;margin-bottom:14px"></div>
+  <div class="row">
+    <div class="col"><label>日期</label><input id="sd-date" type="date" /></div>
+    <div class="col"><label>開始時間</label><input id="sd-start" type="time" step="900" /></div>
+  </div>
+  <div class="row">
+    <div class="col"><label>時長（分鐘）</label><input id="sd-dur" type="number" min="15" step="15" /></div>
+  </div>
+  <div style="display:flex;gap:8px;margin-top:4px">
+    <button class="btn primary" style="flex:1" onclick="saveSchedDetail()">儲存修改</button>
+    <button class="btn" style="flex:1;color:#A32D2D;border-color:#A32D2D" onclick="deleteSchedDetail()">刪除排程</button>
+  </div>
+  <div id="sd-msg" style="margin-top:8px"></div>
+</div>
+
 <script>
 const SERVICES = [
   '精緻洗車','磁土洗車','深層板金護理','鏡面小美容','鏡面大美容',
   '車室大美容','引擎室清洗','機車清洗',
   '晶緻鍍膜','極緻鍍膜','玻璃鍍膜','鋁圈鍍膜','塑料鍍膜','車燈鍍膜','車室鍍膜','機車鍍膜'
 ];
-const CAR_TYPES = ['轎車','輕休旅/旅行車','休旅車','大型休旅車','商務車/皮卡'];
+const CAR_TYPES = ['轎車','輕休旅/旅行車','休旅車','大型休旅車','商務車/皮卡','機車','電動機車'];
 const PRICE_TABLE = {
   '精緻洗車':   [850, 900, 1000, 1300, 1500],
   '磁土洗車':   [1350,1400,1500,1800,2000],
@@ -440,55 +493,44 @@ const STATUS_LABEL = {pending:'待處理',doing:'進行中',done:'完成'};
 
 let db = {
   customers: [
-    {phone:'0912-111-111', name:'王大明', cars:[{plate:'ABC-1234',type:'SUV',cond:'B'}]},
-    {phone:'0922-222-222', name:'李小花', cars:[{plate:'DEF-5678',type:'小型車',cond:'A'},{plate:'GHI-9999',type:'中型車',cond:'A'}]},
-    {phone:'0933-333-333', name:'', cars:[{plate:'JKL-0001',type:'中型車',cond:'C'}]},
-    {phone:'0944-444-444', name:'陳建宏', cars:[{plate:'MNO-2222',type:'SUV',cond:'A'}]},
+    {phone:'0912-345-678', name:'陳志明', cars:[{plate:'ABC1234',type:'轎車',cond:'A'},{plate:'DEF5678',type:'休旅車',cond:'B'}]},
+    {phone:'0922-876-543', name:'林美華', cars:[{plate:'GHI9999',type:'輕休旅/旅行車',cond:'A'}]},
+    {phone:'0933-111-222', name:'張偉豪', cars:[{plate:'JKL0001',type:'大型休旅車',cond:'C'}]},
   ],
   orders: [
-    {id:'O001',phone:'0912-111-111',plate:'ABC-1234',service:'鍍膜',price:3500,time:120,note:'車主指定全車',status:'doing',created:'2026-05-04 09:30'},
-    {id:'O002',phone:'0922-222-222',plate:'DEF-5678',service:'精緻洗',price:800,time:60,note:'車頂有鳥糞需特別處理',status:'pending',created:'2026-05-04 10:15'},
-    {id:'O003',phone:'0922-222-222',plate:'GHI-9999',service:'洗車',price:300,time:30,note:'',status:'done',created:'2026-05-03 14:00'},
-    {id:'O004',phone:'0933-333-333',plate:'JKL-0001',service:'美容',price:2000,time:180,note:'車況差需加強處理',status:'done',created:'2026-05-02 11:00'},
-    {id:'O005',phone:'0944-444-444',plate:'MNO-2222',service:'打蠟',price:1200,time:90,note:'',status:'done',created:'2026-05-01 13:30'},
-    {id:'O006',phone:'0912-111-111',plate:'ABC-1234',service:'洗車',price:300,time:30,note:'',status:'done',created:'2026-04-28 10:00'},
-    {id:'O007',phone:'0922-222-222',plate:'DEF-5678',service:'鍍膜',price:4200,time:150,note:'',status:'done',created:'2026-04-20 09:00'},
-    {id:'O008',phone:'0944-444-444',plate:'MNO-2222',service:'精緻洗',price:800,time:60,note:'',status:'done',created:'2026-04-15 14:00'},
-    {id:'O009',phone:'0933-333-333',plate:'JKL-0001',service:'洗車',price:300,time:30,note:'',status:'done',created:'2026-04-10 11:00'},
-    {id:'O010',phone:'0912-111-111',plate:'ABC-1234',service:'美容',price:2500,time:180,note:'',status:'done',created:'2026-04-05 09:30'},
-    {id:'O011',phone:'0922-222-222',plate:'GHI-9999',service:'打蠟',price:1200,time:90,note:'',status:'done',created:'2026-04-01 13:00'},
-    {id:'O012',phone:'0944-444-444',plate:'MNO-2222',service:'洗車',price:300,time:30,note:'',status:'done',created:'2026-03-25 10:00'},
-    {id:'O013',phone:'0912-111-111',plate:'ABC-1234',service:'精緻洗',price:800,time:60,note:'',status:'done',created:'2026-03-18 09:00'},
-    {id:'O014',phone:'0933-333-333',plate:'JKL-0001',service:'鍍膜',price:3800,time:150,note:'',status:'done',created:'2026-03-10 10:30'},
-    {id:'O015',phone:'0922-222-222',plate:'DEF-5678',service:'美容',price:2000,time:180,note:'',status:'done',created:'2026-03-05 14:00'},
-    {id:'O016',phone:'0944-444-444',plate:'MNO-2222',service:'打蠟',price:1200,time:90,note:'',status:'done',created:'2026-02-22 11:00'},
-    {id:'O017',phone:'0912-111-111',plate:'ABC-1234',service:'洗車',price:300,time:30,note:'',status:'done',created:'2026-02-15 09:00'},
-    {id:'O018',phone:'0922-222-222',plate:'GHI-9999',service:'精緻洗',price:800,time:60,note:'',status:'done',created:'2026-02-08 13:00'},
-    {id:'O019',phone:'0933-333-333',plate:'JKL-0001',service:'洗車',price:300,time:30,note:'',status:'done',created:'2026-01-28 10:00'},
-    {id:'O020',phone:'0944-444-444',plate:'MNO-2222',service:'美容',price:2000,time:180,note:'',status:'done',created:'2026-01-15 14:00'},
+    {id:'O001',phone:'0912-345-678',plate:'ABC1234',service:'精緻洗車',price:850,time:60,note:'',payment:'cash',status:'done',created:'2026-05-05 09:30',photosBefore:[],photosAfter:[]},
+    {id:'O002',phone:'0922-876-543',plate:'GHI9999',service:'晶緻鍍膜',price:18000,time:180,note:'客人要求加強車頂',payment:'wallet',status:'pending',created:'2026-05-05 10:00',photosBefore:[],photosAfter:[]},
+    {id:'O003',phone:'0933-111-222',plate:'JKL0001',service:'鏡面大美容',price:12000,time:240,note:'車況C，多處刮痕',payment:'cash',status:'doing',created:'2026-05-05 11:00',photosBefore:[],photosAfter:[]},
+    {id:'O004',phone:'0912-345-678',plate:'DEF5678',service:'磁土洗車',price:1500,time:90,note:'',payment:'cash',status:'done',created:'2026-04-28 14:00',photosBefore:[],photosAfter:[]},
+    {id:'O005',phone:'0922-876-543',plate:'GHI9999',service:'精緻洗車',price:900,time:60,note:'',payment:'wallet',status:'done',created:'2026-04-15 10:00',photosBefore:[],photosAfter:[]},
   ],
   wallets: {
-    '0912-111-111': {balance: 5000, txns: [
-      {type:'topup', amount:5000, note:'現金儲值', date:'2026-04-20 10:00', balance:5000}
+    '0912-345-678': {balance:3000, bonus:0, txns:[
+      {type:'topup', amount:3000, note:'現金儲值', date:'2026-04-01 10:00', balance:3000}
     ]},
-    '0922-222-222': {balance: 200, txns: [
-      {type:'topup', amount:2000, note:'首次儲值', date:'2026-03-01 09:00', balance:2000},
-      {type:'deduct', amount:1500, note:'鍍膜 DEF-5678', date:'2026-04-10 14:00', balance:500},
-      {type:'deduct', amount:300, note:'洗車 GHI-9999', date:'2026-05-03 14:05', balance:200},
+    '0922-876-543': {balance:15000, bonus:500, txns:[
+      {type:'topup', amount:15000, note:'現金儲值', date:'2026-04-10 09:00', balance:15000},
+      {type:'topup', amount:500, note:'推薦優惠金（由 陳志明 推薦）', date:'2026-04-10 09:01', balance:15500},
+      {type:'deduct', amount:900, note:'精緻洗車 GHI9999', date:'2026-04-15 10:30', balance:14600},
     ]},
+    '0933-111-222': {balance:0, bonus:0, txns:[]},
   },
-  referrals: {}
+  referrals: {
+    '0922-876-543': {referrer:'0912-345-678', rewarded:false, newMember:'0922-876-543'}
+  },
+  schedule: []
 };
 
 let orderState = {phone:'', plate:'', service:'', payment:'cash'};
 let orderStateVehicle = null;
 
 function switchTab(name) {
-  const names = ['today','search','order','orders','history','wallet','schedule','dashboard'];
+  const names = ['today','schedule','search','order','orders','wallet','dashboard','history'];
   document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active', names[i]===name));
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById('screen-'+name).classList.add('active');
   if(name==='today') renderToday();
+  if(name==='search') renderCustomerList();
   if(name==='orders') renderOrders();
   if(name==='dashboard') renderDash();
   if(name==='schedule') renderSchedule();
@@ -535,7 +577,7 @@ function renderWalletList(){
   const el = document.getElementById('wallet-member-list');
   if(!list.length){el.innerHTML='<div class="empty">找不到符合的會員</div>';return;}
   el.innerHTML = list.map(c=>{
-    const w = getWallet(c.phone); const bal = w.balance;
+    const w = getWallet(c.phone); const bal = totalBalance(w);
     const balColor = bal<=0?'#A32D2D':bal<500?'#854F0B':'#085041';
     const balBg = bal<=0?'#FCEBEB':bal<500?'#FAEEDA':'#E1F5EE';
     const orders = db.orders.filter(o=>o.phone===c.phone&&o.status==='done');
@@ -547,7 +589,11 @@ function renderWalletList(){
         <div style="font-size:14px;font-weight:500;display:flex;align-items:center;gap:6px">${c.name||'（未填姓名）'}<span style="font-size:10px;color:var(--text3);font-weight:400">${c.name?strokeN+'畫':''}</span></div>
         <div style="font-size:12px;color:var(--text2);margin-top:1px">${c.phone} · ${c.cars.length}台 · 消費$${total.toLocaleString()}</div>
       </div>
-      <div style="text-align:right;flex-shrink:0"><div style="font-size:13px;font-weight:500;padding:3px 8px;border-radius:99px;background:${balBg};color:${balColor}">$${bal.toLocaleString()}</div></div>
+      <div style="text-align:right;flex-shrink:0">
+        <div style="font-size:13px;font-weight:500;padding:3px 8px;border-radius:99px;background:${balBg};color:${balColor};margin-bottom:3px">合計 $${bal.toLocaleString()}</div>
+        <div style="font-size:11px;color:#085041">儲值 $${w.balance.toLocaleString()}</div>
+        ${(w.bonus||0)>0?`<div style="font-size:11px;color:#0C447C">優惠 $${(w.bonus||0).toLocaleString()}</div>`:''}
+      </div>
     </div>`;
   }).join('');
 }
@@ -564,6 +610,116 @@ function openWalletDetail(phone){
 
 function findCustomer(phone) { return db.customers.find(c=>c.phone===phone?.trim()); }
 
+/* ═══ 客戶資料 Tab ═══ */
+function renderCustomerList(){
+  const q=(document.getElementById('search-q')?.value||'').trim().toLowerCase();
+  let list=[...db.customers];
+  if(q){list=list.filter(c=>c.name.toLowerCase().includes(q)||c.phone.includes(q)||c.cars.some(v=>v.plate.toLowerCase().includes(q)));}
+  list.sort((a,b)=>{const sa=strokeCount(a.name),sb=strokeCount(b.name);if(sa!==sb)return sa-sb;return(a.name||'').localeCompare(b.name||'','zh-TW');});
+  const el=document.getElementById('customer-list');
+  if(!list.length){el.innerHTML='<div class="empty">找不到符合的客戶</div>';return;}
+  el.innerHTML=list.map(c=>{
+    const w=getWallet(c.phone);const bal=totalBalance(w);
+    const balColor=bal<=0?'#A32D2D':bal<500?'#854F0B':'#085041';
+    const balBg=bal<=0?'#FCEBEB':bal<500?'#FAEEDA':'#E1F5EE';
+    const orders=db.orders.filter(o=>o.phone===c.phone&&o.status==='done');
+    const total=orders.reduce((s,o)=>s+o.price,0);
+    const carsStr=c.cars.map(v=>v.plate).join('、')||'無車輛';
+    return`<div style="display:flex;align-items:center;gap:14px;padding:13px 18px;border-bottom:0.5px solid var(--border);cursor:pointer;min-height:64px" onclick="openCustomerDetail('${c.phone}')" onmouseover="this.style.background='var(--bg2)'" onmouseout="this.style.background=''">
+      <div style="width:42px;height:42px;border-radius:50%;background:var(--bg2);display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:600;flex-shrink:0;color:var(--text2)">${c.name?c.name[0]:'?'}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:15px;font-weight:600">${c.name||'（未填姓名）'}</div>
+        <div style="font-size:12px;color:var(--text2);margin-top:2px">${c.phone} · ${carsStr}</div>
+        <div style="font-size:12px;color:var(--text3);margin-top:1px">消費 ${orders.length} 次 · $${total.toLocaleString()}</div>
+      </div>
+      <div style="text-align:right;flex-shrink:0">
+        <div style="font-size:13px;font-weight:600;padding:3px 8px;border-radius:99px;background:${balBg};color:${balColor};margin-bottom:3px">合計 $${bal.toLocaleString()}</div>
+        <div style="font-size:11px;color:#085041">儲值 $${w.balance.toLocaleString()}</div>
+        ${(w.bonus||0)>0?`<div style="font-size:11px;color:#0C447C">優惠 $${(w.bonus||0).toLocaleString()}</div>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function openCustomerDetail(phone){
+  const c=findCustomer(phone);if(!c)return;
+  const carsHtml=c.cars.map(car=>`<span class="badge badge-${car.cond.toLowerCase()}" style="margin-right:6px;margin-bottom:4px">${car.plate} ${car.type} ${car.cond}</span>`).join('');
+  const orders=db.orders.filter(o=>o.phone===c.phone);
+  const total=orders.reduce((s,o)=>s+o.price,0);
+  const w=getWallet(c.phone);
+  const refPlates=c.cars.map(v=>v.plate).join('、')||'（尚無車牌）';
+  const refCount=Object.values(db.referrals||{}).filter(r=>r.referrer===c.phone&&r.rewarded).length;
+  const tot=totalBalance(w);
+  document.getElementById('customer-detail-body').innerHTML=`
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px">
+      <div style="width:52px;height:52px;border-radius:50%;background:var(--green-bg);display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:600;color:var(--green-text);flex-shrink:0">${c.name?c.name[0]:'?'}</div>
+      <div><div style="font-size:18px;font-weight:600">${c.name||'（未填姓名）'}</div><div style="font-size:14px;color:var(--text2);margin-top:2px">${c.phone}</div></div>
+    </div>
+    <div style="margin-bottom:12px">${carsHtml||'<span style="color:var(--text3);font-size:13px">尚無車輛</span>'}</div>
+    <div class="kv"><span class="k">服務次數</span><span class="v">${orders.length} 次</span></div>
+    <div class="kv"><span class="k">累計消費</span><span class="v">$${total.toLocaleString()}</span></div>
+    <div class="kv"><span class="k">儲值金</span><span class="v" style="color:#085041">$${w.balance.toLocaleString()}</span></div>
+    <div class="kv"><span class="k">優惠金</span><span class="v" style="color:#0C447C">$${(w.bonus||0).toLocaleString()}</span></div>
+    <div class="kv"><span class="k" style="font-weight:600">合計可用</span><span class="v" style="color:${tot<=0?'#A32D2D':tot<500?'#854F0B':'#085041'}">$${tot.toLocaleString()}</span></div>
+    <div class="kv"><span class="k">推薦車號</span><span class="v"><span class="ref-code">${refPlates}</span></span></div>
+    <div class="kv"><span class="k">成功推薦</span><span class="v">${refCount} 位</span></div>
+    <div class="divider"></div>
+    <div style="display:flex;gap:8px;margin-bottom:8px">
+      <button class="btn primary" style="flex:1" onclick="closeCustomerDetail();goOrder('${c.phone}')">立即開單</button>
+      <button class="btn" style="flex:1" onclick="closeCustomerDetail();goWallet('${c.phone}')">儲值</button>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn" style="flex:1" onclick="closeCustomerDetail();goHistory('${c.phone}')">服務紀錄</button>
+      <button class="btn" style="flex:1" onclick="showReferralInputDetail('${c.phone}')">輸入推薦車號</button>
+    </div>
+    <div id="ref-input-area-${c.phone}" style="display:none;margin-top:12px">
+      <div class="row"><div class="col"><input id="ref-input-${c.phone}" placeholder="輸入推薦人的車號（如ABC1234）" /></div><button class="btn primary" onclick="applyReferral('${c.phone}')">確認</button></div>
+      <div id="ref-msg-${c.phone}" style="font-size:13px;margin-top:6px"></div>
+    </div>`;
+  document.getElementById('customer-detail-overlay').style.display='block';
+  document.getElementById('customer-detail-sheet').style.display='block';
+}
+
+function closeCustomerDetail(){
+  document.getElementById('customer-detail-overlay').style.display='none';
+  document.getElementById('customer-detail-sheet').style.display='none';
+}
+
+function showReferralInputDetail(phone){const a=document.getElementById(`ref-input-area-${phone}`);if(a)a.style.display=a.style.display==='none'?'block':'none';}
+
+function toggleCustomerList(){
+  const list=document.getElementById('customer-list');
+  const btn=document.getElementById('customer-list-toggle');
+  const isHidden=list.style.display==='none';
+  if(isHidden){
+    list.style.display='block';
+    btn.textContent='☰ 收起客戶列表';
+    renderCustomerList();
+  } else {
+    list.style.display='none';
+    btn.textContent='☰ 顯示所有客戶';
+  }
+}
+
+function onSearchQ(){
+  const q=(document.getElementById('search-q')?.value||'').trim();
+  const list=document.getElementById('customer-list');
+  const btn=document.getElementById('customer-list-toggle');
+  if(q){
+    // 搜尋時自動展開
+    list.style.display='block';
+    btn.textContent='☰ 收起客戶列表';
+  }
+  renderCustomerList();
+}
+
+function toggleNewCustomer(){
+  const form=document.getElementById('new-customer-form');
+  const btn=document.getElementById('new-customer-toggle');
+  if(form.style.display==='none'){form.style.display='block';btn.textContent='✕ 收起';}
+  else{form.style.display='none';btn.textContent='＋ 新增客戶';}
+}
+
 function liveSearch() {
   const phone = document.getElementById('search-phone').value.trim();
   const name  = document.getElementById('search-name').value.trim();
@@ -574,7 +730,7 @@ function liveSearch() {
     const results = db.customers.filter(c=>c.name && c.name.includes(name));
     if(!results.length) { el.innerHTML=''; return; }
     if(results.length === 1) { el.innerHTML = buildCustomerCard(results[0], true); return; }
-    el.innerHTML = results.map(c=>{ const w = getWallet(c.phone); return `<div class="card" style="cursor:pointer;margin-bottom:6px" onclick="selectSearchResult('${c.phone}')"><div style="display:flex;align-items:center;justify-content:space-between"><div><div style="font-size:14px;font-weight:500">${c.name}</div><div style="font-size:12px;color:var(--text2);margin-top:2px">${c.phone} · ${c.cars.length}台</div></div>${walletBadgeHtml(w.balance)}</div></div>`; }).join('');
+    el.innerHTML = results.map(c=>{ const w = getWallet(c.phone); return `<div class="card" style="cursor:pointer;margin-bottom:6px" onclick="selectSearchResult('${c.phone}')"><div style="display:flex;align-items:center;justify-content:space-between"><div><div style="font-size:14px;font-weight:500">${c.name}</div><div style="font-size:12px;color:var(--text2);margin-top:2px">${c.phone} · ${c.cars.length}台</div></div>${walletBadgeHtml(w)}</div></div>`; }).join('');
   }
 }
 
@@ -594,7 +750,7 @@ function doSearch() {
     const results = db.customers.filter(c=>c.name && c.name.includes(name));
     if(!results.length) { el.innerHTML='<div class="msg msg-error">找不到符合姓名的客戶。</div>'; }
     else if(results.length===1) { el.innerHTML = buildCustomerCard(results[0], true); }
-    else { el.innerHTML = results.map(c=>{ const w = getWallet(c.phone); return `<div class="card" style="cursor:pointer;margin-bottom:6px" onclick="selectSearchResult('${c.phone}')"><div style="display:flex;align-items:center;justify-content:space-between"><div><div style="font-size:14px;font-weight:500">${c.name}</div><div style="font-size:12px;color:var(--text2);margin-top:2px">${c.phone}</div></div>${walletBadgeHtml(w.balance)}</div></div>`; }).join(''); }
+    else { el.innerHTML = results.map(c=>{ const w = getWallet(c.phone); return `<div class="card" style="cursor:pointer;margin-bottom:6px" onclick="selectSearchResult('${c.phone}')"><div style="display:flex;align-items:center;justify-content:space-between"><div><div style="font-size:14px;font-weight:500">${c.name}</div><div style="font-size:12px;color:var(--text2);margin-top:2px">${c.phone}</div></div>${walletBadgeHtml(w)}</div></div>`; }).join(''); }
     return;
   }
   el.innerHTML='<div class="msg msg-error">請輸入電話或姓名進行查詢。</div>';
@@ -605,63 +761,114 @@ function buildCustomerCard(c, withActions) {
   const orders = db.orders.filter(o=>o.phone===c.phone);
   const total = orders.reduce((s,o)=>s+o.price,0);
   const w = getWallet(c.phone);
-  const refCode = getRefCode(c.phone);
+  const tot = totalBalance(w);
+  const refPlates = c.cars.map(v=>v.plate).join('、')||'（尚無車牌）';
   const refCount = Object.values(db.referrals||{}).filter(r=>r.referrer===c.phone&&r.rewarded).length;
   return `<div class="${withActions?'search-highlight':'card'}">
-    <div class="card-header"><div><div class="card-title">${c.name||'（未填姓名）'}</div><div class="card-sub">${c.phone}</div></div>${walletBadgeHtml(w.balance)}</div>
+    <div class="card-header"><div><div class="card-title">${c.name||'（未填姓名）'}</div><div class="card-sub">${c.phone}</div></div>${walletBadgeHtml(w)}</div>
     <div style="margin-bottom:8px">${carsHtml}</div>
     <div class="kv"><span class="k">服務次數</span><span class="v">${orders.length} 次</span></div>
     <div class="kv"><span class="k">累計消費</span><span class="v">$${total.toLocaleString()}</span></div>
-    <div class="kv"><span class="k">儲值餘額</span><span class="v" style="color:${w.balance<=0?'#A32D2D':w.balance<500?'#854F0B':'#085041'}">$${w.balance.toLocaleString()}</span></div>
-    <div class="kv"><span class="k">推薦碼</span><span class="v"><span class="ref-code">${refCode}</span></span></div>
+    <div class="kv"><span class="k">儲值金</span><span class="v" style="color:#085041">$${w.balance.toLocaleString()}</span></div>
+    <div class="kv"><span class="k">優惠金</span><span class="v" style="color:#0C447C">$${(w.bonus||0).toLocaleString()}</span></div>
+    <div class="kv"><span class="k">推薦車號</span><span class="v"><span class="ref-code">${refPlates}</span></span></div>
     <div class="kv"><span class="k">成功推薦</span><span class="v">${refCount} 位 (+$${refCount*300})</span></div>
     ${withActions?`<div class="actions-row">
       <button class="btn primary" onclick="goOrder('${c.phone}')">立即開單</button>
       <button class="btn" onclick="goHistory('${c.phone}')">查服務紀錄</button>
       <button class="btn" onclick="goWallet('${c.phone}')">儲值</button>
-      <button class="btn" onclick="showReferralInput('${c.phone}')">輸入推薦碼</button>
+      <button class="btn" onclick="showReferralInput('${c.phone}')">輸入推薦車號</button>
     </div>
     <div id="ref-input-area-${c.phone}" style="display:none;margin-top:8px">
-      <div class="row"><div class="col"><input id="ref-input-${c.phone}" placeholder="輸入推薦人的推薦碼" /></div><button class="btn primary" onclick="applyReferral('${c.phone}')">確認</button></div>
+      <div class="row"><div class="col"><input id="ref-input-${c.phone}" placeholder="輸入推薦人的車號（如ABC1234）" /></div><button class="btn primary" onclick="applyReferral('${c.phone}')">確認</button></div>
       <div id="ref-msg-${c.phone}" style="font-size:12px;margin-top:4px"></div>
     </div>`:''}
   </div>`;
 }
 
-function getRefCode(phone){ const digits=phone.replace(/\D/g,''); const n=parseInt(digits.slice(-6))||1; return 'R'+((n*7+13)%899999+100000).toString().slice(0,5).toUpperCase(); }
-function findByRefCode(code){ return db.customers.find(c=>getRefCode(c.phone)===code.trim().toUpperCase()); }
-function showReferralInput(phone){ const area=document.getElementById(`ref-input-area-${phone}`); if(area) area.style.display=area.style.display==='none'?'block':'none'; }
+// 推薦碼改成車號
+function findByRefPlate(plate){
+  if(!plate) return null;
+  const p=plate.trim().toUpperCase().replace(/-/g,'');
+  return db.customers.find(c=>c.cars.some(v=>v.plate.toUpperCase().replace(/-/g,'')===p));
+}
+
 function applyReferral(newPhone){
   const code=(document.getElementById(`ref-input-${newPhone}`)?.value||'').trim();
   const msgEl=document.getElementById(`ref-msg-${newPhone}`);
-  if(!code){msgEl.innerHTML='<span style="color:#A32D2D">請輸入推薦碼</span>';return;}
-  const referrer=findByRefCode(code);
-  if(!referrer){msgEl.innerHTML='<span style="color:#A32D2D">推薦碼不存在</span>';return;}
+  if(!code){msgEl.innerHTML='<span style="color:#A32D2D">請輸入推薦人車號</span>';return;}
+  const referrer=findByRefPlate(code);
+  if(!referrer){msgEl.innerHTML='<span style="color:#A32D2D">找不到此車號的客戶</span>';return;}
   if(referrer.phone===newPhone){msgEl.innerHTML='<span style="color:#A32D2D">不能推薦自己</span>';return;}
   const refs=db.referrals||{};
-  if(refs[newPhone]){msgEl.innerHTML='<span style="color:#A32D2D">此客戶已使用過推薦碼</span>';return;}
+  if(refs[newPhone]){msgEl.innerHTML='<span style="color:#A32D2D">此客戶已使用過推薦</span>';return;}
   refs[newPhone]={referrer:referrer.phone,rewarded:false,newMember:newPhone};db.referrals=refs;
-  const wNew=getWallet(newPhone);wNew.balance+=500;wNew.txns.push({type:'topup',amount:500,note:`推薦優惠（由 ${referrer.name||referrer.phone} 推薦）`,date:nowStr(),balance:wNew.balance});
-  msgEl.innerHTML=`<span style="color:#085041">✓ 推薦成立！已獲得 $500 洗車折抵，推薦人完成首次服務後獲得 $300 獎勵</span>`;
-  doSearch();
+  // 新會員獲得 $500 優惠金
+  const wNew=getWallet(newPhone);
+  wNew.bonus=(wNew.bonus||0)+500;
+  wNew.txns.push({type:'topup',amount:500,note:`推薦優惠金（由 ${referrer.name||code} 推薦）`,date:nowStr(),balance:totalBalance(wNew)});
+  msgEl.innerHTML=`<span style="color:#085041">✓ 推薦成立！已獲得 $500 優惠金，推薦人完成首次服務後獲得 $300 優惠金</span>`;
+  scheduleSave();
+  renderCustomerList();
 }
+
 function checkReferralReward(phone){
   const refs=db.referrals||{}; const ref=refs[phone];
-  if(ref&&!ref.rewarded){ ref.rewarded=true; const wRef=getWallet(ref.referrer); wRef.balance+=300; wRef.txns.push({type:'topup',amount:300,note:`推薦獎勵（${findCustomer(phone)?.name||phone} 首次消費）`,date:nowStr(),balance:wRef.balance}); }
+  if(ref&&!ref.rewarded){
+    ref.rewarded=true;
+    const wRef=getWallet(ref.referrer);
+    wRef.bonus=(wRef.bonus||0)+300;
+    wRef.txns.push({type:'topup',amount:300,note:`推薦獎勵優惠金（${findCustomer(phone)?.name||phone} 首次消費）`,date:nowStr(),balance:totalBalance(wRef)});
+  }
 }
+
 function goWallet(phone){ switchTab('wallet'); openWalletDetail(phone); }
-function goOrder(phone){ switchTab('order'); document.getElementById('order-phone').value=phone; fillOrderCustomer(); }
+function goOrder(phone){ switchTab('order'); const c=findCustomer(phone); const el=document.getElementById('order-search'); if(el&&c)el.value=c.name||c.phone; selectOrderCustomer(phone); }
 function goHistory(phone){ switchTab('history'); const c=findCustomer(phone); if(c&&c.cars.length>0){ document.getElementById('hist-search').value=c.cars[0].plate; renderHistoryList(); } }
 
 function addCustomer(){
-  const name=document.getElementById('new-name').value.trim(); const phone=document.getElementById('new-phone').value.trim();
-  const plate=document.getElementById('new-plate').value.trim().toUpperCase(); const type=document.getElementById('new-ctype').value; const cond=document.getElementById('new-cond').value;
+  const name=document.getElementById('new-name').value.trim();
+  const phone=document.getElementById('new-phone').value.trim();
+  const plate=document.getElementById('new-plate').value.trim().toUpperCase().replace(/-/g,'');
+  const type=document.getElementById('new-ctype').value;
+  const cond=document.getElementById('new-cond').value;
+  const refPlate=(document.getElementById('new-ref-plate')?.value||'').trim().toUpperCase().replace(/-/g,'');
   const msgEl=document.getElementById('new-msg');
   if(!phone){msgEl.innerHTML='<div class="msg msg-error">電話號碼為必填欄位</div>';return;}
   if(findCustomer(phone)){msgEl.innerHTML='<div class="msg msg-error">此電話號碼已存在</div>';return;}
-  const cars=plate?[{plate,type,cond}]:[];db.customers.push({phone,name,cars});
-  msgEl.innerHTML=`<div class="msg msg-success">客戶已建立${plate?' — 車牌 '+plate+' ('+type+' '+cond+'等級)':''}</div>`;
-  ['new-name','new-phone','new-plate'].forEach(id=>document.getElementById(id).value='');
+  if(plate){
+    const plateExists=db.customers.some(c=>c.cars.some(v=>v.plate===plate));
+    if(plateExists){msgEl.innerHTML='<div class="msg msg-error">此車牌已存在，請確認是否重複登入</div>';return;}
+  }
+  const cars=plate?[{plate,type,cond}]:[];
+  db.customers.push({phone,name,cars});
+
+  let refMsg='';
+  // 處理推薦車號
+  if(refPlate){
+    const refs=db.referrals||{};
+    if(refs[phone]){
+      refMsg=' — 此客戶已使用過推薦';
+    } else {
+      const referrer=findByRefPlate(refPlate);
+      if(!referrer){
+        refMsg=' — 找不到推薦車號，推薦未套用';
+      } else if(referrer.phone===phone){
+        refMsg=' — 不能推薦自己';
+      } else {
+        refs[phone]={referrer:referrer.phone,rewarded:false,newMember:phone};
+        db.referrals=refs;
+        const wNew=getWallet(phone);
+        wNew.bonus=(wNew.bonus||0)+500;
+        wNew.txns.push({type:'topup',amount:500,note:`推薦優惠金（由 ${referrer.name||refPlate} 推薦）`,date:nowStr(),balance:totalBalance(wNew)});
+        refMsg=` — 推薦成立，已獲 $500 優惠金`;
+      }
+    }
+  }
+
+  msgEl.innerHTML=`<div class="msg msg-success">客戶已建立${plate?' — '+plate:''}${refMsg}</div>`;
+  ['new-name','new-phone','new-plate','new-ref-plate'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  renderCustomerList();
 }
 
 function initServiceChips(){
@@ -690,17 +897,47 @@ function checkOrderBalance(){
   if(orderState.payment==='cash'){el.innerHTML='<div class="msg msg-info">現金付款，完成時不扣儲值</div>';return;}
   const price=parseInt(document.getElementById('order-price').value)||0; if(!price){el.innerHTML='';return;}
   const w=getWallet(orderState.phone);
-  if(w.balance>=price){ el.innerHTML=`<div class="msg msg-success">儲值餘額充足 — $${w.balance.toLocaleString()} ≥ $${price.toLocaleString()}</div>`; }
+  if(totalBalance(w)>=price){ el.innerHTML=`<div class="msg msg-success">儲值充足 — $${totalBalance(w).toLocaleString()} ≥ $${price.toLocaleString()}</div>`; }
   else { const short=price-w.balance; el.innerHTML=`<div class="msg msg-error">儲值不足 — 目前 $${w.balance.toLocaleString()}，差 $${short.toLocaleString()}</div>`; }
 }
 function fillOrderCustomer(){
-  const phone=document.getElementById('order-phone').value.trim(); const c=findCustomer(phone);
-  const infoEl=document.getElementById('order-customer-info'); const carsEl=document.getElementById('order-cars');
-  if(!c){ infoEl.innerHTML=''; carsEl.innerHTML='<span style="color:var(--text3);font-size:12px">查詢客戶後顯示車輛</span>'; orderState.phone=''; orderState.plate=''; document.getElementById('upsell-hint').innerHTML=''; return; }
+  const q=(document.getElementById('order-search')?.value||'').trim();
+  const infoEl=document.getElementById('order-customer-info');
+  const carsEl=document.getElementById('order-cars');
+  const listEl=document.getElementById('order-search-list');
+  if(!q){
+    infoEl.innerHTML='';carsEl.innerHTML='<span style="color:var(--text3);font-size:13px">查詢客戶後顯示車輛</span>';
+    listEl.innerHTML='';orderState.phone='';orderState.plate='';
+    document.getElementById('upsell-hint').innerHTML='';return;
+  }
+  // 精確電話比對
+  const exact=findCustomer(q);
+  if(exact){selectOrderCustomer(exact.phone);listEl.innerHTML='';return;}
+  // 模糊搜尋姓名或電話
+  const results=db.customers.filter(c=>c.name.includes(q)||c.phone.includes(q));
+  if(!results.length){
+    infoEl.innerHTML='';carsEl.innerHTML='<span style="color:var(--text3);font-size:13px">查詢客戶後顯示車輛</span>';
+    listEl.innerHTML='<div class="msg msg-error">找不到符合的客戶</div>';
+    orderState.phone='';orderState.plate='';return;
+  }
+  if(results.length===1){selectOrderCustomer(results[0].phone);listEl.innerHTML='';return;}
+  // 多筆 → 顯示選擇清單
+  infoEl.innerHTML='';carsEl.innerHTML='<span style="color:var(--text3);font-size:13px">查詢客戶後顯示車輛</span>';
+  listEl.innerHTML=results.map(c=>`<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:0.5px solid var(--border);cursor:pointer" onclick="selectOrderCustomer('${c.phone}')">
+    <div style="width:36px;height:36px;border-radius:50%;background:var(--bg2);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;color:var(--text2);flex-shrink:0">${c.name?c.name[0]:'?'}</div>
+    <div><div style="font-size:14px;font-weight:600">${c.name||'（未填姓名）'}</div><div style="font-size:12px;color:var(--text2)">${c.phone} · ${c.cars.map(v=>v.plate).join('、')||'無車輛'}</div></div>
+  </div>`).join('');
+}
+
+function selectOrderCustomer(phone){
+  const c=findCustomer(phone);if(!c)return;
+  const searchEl=document.getElementById('order-search');
+  if(searchEl)searchEl.value=c.name||c.phone;
+  document.getElementById('order-search-list').innerHTML='';
   orderState.phone=phone;
-  const w=getWallet(phone); const balColor=w.balance<=0?'#A32D2D':w.balance<500?'#854F0B':'#085041';
-  infoEl.innerHTML=`<div class="msg msg-info">${c.name||'（未填姓名）'} — 共 ${c.cars.length} 台車 &nbsp;｜&nbsp; 儲值餘額：<strong style="color:${balColor}">$${w.balance.toLocaleString()}</strong></div>`;
-  carsEl.innerHTML=c.cars.map(car=>`<span class="chip" onclick="selectCar('${car.plate}',this)">${car.plate} <span class="badge badge-${car.cond.toLowerCase()}" style="margin-left:2px;font-size:10px">${car.type} ${car.cond}</span></span>`).join('');
+  const w=getWallet(phone);const balColor=w.balance<=0?'#A32D2D':w.balance<500?'#854F0B':'#085041';
+  document.getElementById('order-customer-info').innerHTML=`<div class="msg msg-info">${c.name||'（未填姓名）'} — ${c.cars.length} 台車 ｜ 儲值：<strong style="color:${balColor}">$${w.balance.toLocaleString()}</strong></div>`;
+  document.getElementById('order-cars').innerHTML=c.cars.map(car=>`<span class="chip" onclick="selectCar('${car.plate}',this)">${car.plate} <span class="badge badge-${car.cond.toLowerCase()}" style="margin-left:2px;font-size:10px">${car.type} ${car.cond}</span></span>`).join('');
 }
 function selectCar(plate,el){ document.querySelectorAll('#order-cars .chip').forEach(c=>c.classList.remove('selected')); el.classList.add('selected'); orderState.plate=plate; showUpsellHint(plate); autoFillPrice(); }
 
@@ -724,6 +961,66 @@ function showUpsellHint(plate){
 function updateServiceSummary(){ const selected=[...document.querySelectorAll('#service-chips .chip.selected')].map(c=>c.dataset.svc||c.textContent.trim()); orderState.service=selected.join('、'); }
 function quickSelectService(s){ document.querySelectorAll('#service-chips .chip').forEach(c=>{ if((c.dataset.svc||c.textContent.trim())===s){ c.classList.add('selected'); orderState.service=s; } }); autoFillPrice(); }
 
+// 暫存洗車前照片（base64）
+let pendingBeforePhotos = [];
+
+function addBeforePhotos(input){
+  const files = Array.from(input.files);
+  if(!files.length) return;
+  const preview = document.getElementById('order-photos-before');
+  files.forEach(file=>{
+    const reader = new FileReader();
+    reader.onload = ev=>{
+      const b64 = ev.target.result;
+      pendingBeforePhotos.push(b64);
+      const img = document.createElement('div');
+      img.style.cssText='position:relative;width:80px;height:80px;border-radius:8px;overflow:hidden;flex-shrink:0';
+      const idx = pendingBeforePhotos.length - 1;
+      img.innerHTML=`<img src="${b64}" style="width:100%;height:100%;object-fit:cover">
+        <button onclick="removeBeforePhoto(${idx},this.parentNode)" style="position:absolute;top:2px;right:2px;width:20px;height:20px;border-radius:50%;background:rgba(0,0,0,0.5);color:#fff;border:none;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1">✕</button>`;
+      preview.appendChild(img);
+    };
+    reader.readAsDataURL(file);
+  });
+  input.value=''; // reset so same file can be re-added
+}
+
+function removeBeforePhoto(idx, el){
+  pendingBeforePhotos[idx] = null;
+  el.remove();
+}
+
+function photosHtml(photos, label){
+  if(!photos||!photos.length) return '';
+  const valid = photos.filter(Boolean);
+  if(!valid.length) return '';
+  return `<div style="margin-top:8px">
+    <div style="font-size:12px;font-weight:500;color:var(--text2);margin-bottom:6px">${label}</div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px">
+      ${valid.map(b64=>`<img src="${b64}" style="width:72px;height:72px;object-fit:cover;border-radius:8px;border:1px solid var(--border)">`).join('')}
+    </div>
+  </div>`;
+}
+
+function addAfterPhotos(orderId, input){
+  const files = Array.from(input.files);
+  if(!files.length) return;
+  const o = db.orders.find(o=>o.id===orderId);
+  if(!o) return;
+  if(!o.photosAfter) o.photosAfter=[];
+  let loaded=0;
+  files.forEach(file=>{
+    const reader=new FileReader();
+    reader.onload=ev=>{
+      o.photosAfter.push(ev.target.result);
+      loaded++;
+      if(loaded===files.length){ scheduleSave(); renderOrders(); }
+    };
+    reader.readAsDataURL(file);
+  });
+  input.value='';
+}
+
 function createOrder(){
   const msgEl=document.getElementById('order-msg');
   if(!orderState.phone){msgEl.innerHTML='<div class="msg msg-error">請先輸入電話查詢客戶</div>';return;}
@@ -740,13 +1037,17 @@ function createOrder(){
   const id='O'+String(db.orders.length+1).padStart(3,'0');
   const now=new Date();
   const created=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
-  db.orders.push({id,phone:orderState.phone,plate:orderState.plate,service:orderState.service,price,time,note,payment,appt,staff,status:'pending',created});
-  msgEl.innerHTML=`<div class="msg msg-success">訂單 ${id} 已建立 — ${orderState.service} / ${orderState.plate} / $${price.toLocaleString()}${appt?' / 預約'+appt:''}${staff?' / '+staff:''}</div>`;
+  const photosBefore = pendingBeforePhotos.filter(Boolean);
+  db.orders.push({id,phone:orderState.phone,plate:orderState.plate,service:orderState.service,price,time,note,payment,appt,staff,status:'pending',created,photosBefore,photosAfter:[]});
+  msgEl.innerHTML=`<div class="msg msg-success">訂單 ${id} 已建立 — ${orderState.service} / ${orderState.plate} / $${price.toLocaleString()}${appt?' / 預約'+appt:''}${staff?' / '+staff:''}${photosBefore.length?' / '+photosBefore.length+'張照片':''}</div>`;
   orderState={phone:'',plate:'',service:'',payment:'cash'};
-  ['order-phone','order-price','order-time','order-note','order-appt-date','order-appt-time'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  pendingBeforePhotos=[];
+  document.getElementById('order-photos-before').innerHTML='';
+  ['order-search','order-price','order-time','order-note','order-appt-date','order-appt-time'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  document.getElementById('order-search-list').innerHTML='';
   document.getElementById('order-staff').value='';
   document.getElementById('order-customer-info').innerHTML='';
-  document.getElementById('order-cars').innerHTML='<span style="color:var(--text3);font-size:12px">查詢客戶後顯示車輛</span>';
+  document.getElementById('order-cars').innerHTML='<span style="color:var(--text3);font-size:13px">查詢客戶後顯示車輛</span>';
   document.getElementById('balance-check').innerHTML='';
   document.getElementById('upsell-hint').innerHTML='';
   document.getElementById('service-summary').textContent='';
@@ -796,7 +1097,7 @@ function todaySetStatus(id,status){
   const o=db.orders.find(o=>o.id===id);if(!o)return;
   const isCash=o.payment==='cash'||!o.payment;
   if(status==='done'&&o.status!=='done'&&o.price>0){
-    if(!isCash){const w=getWallet(o.phone);if(w.balance<o.price){alert(`❌ 儲值不足\n需要 $${o.price.toLocaleString()}，目前 $${w.balance.toLocaleString()}`);return;}deductWallet(o.phone,o.price,`${o.service} ${o.plate}`);o.deducted=true;}
+    if(!isCash){const w=getWallet(o.phone);if(totalBalance(w)<o.price){alert(`❌ 儲值不足\n需要 $${o.price.toLocaleString()}，目前 $${w.balance.toLocaleString()}`);return;}deductWallet(o.phone,o.price,`${o.service} ${o.plate}`);o.deducted=true;}
   }
   o.status=status;renderToday();
 }
@@ -814,7 +1115,7 @@ function renderOrders(){
   const el=document.getElementById('orders-list');
   if(!list.length){el.innerHTML='<div class="empty">目前沒有符合的訂單</div>';return;}
   el.innerHTML=[...list].reverse().map(o=>{
-    const c=findCustomer(o.phone); const isCash=o.payment==='cash'||!o.payment; const w=getWallet(o.phone); const canComplete=isCash||o.price===0||w.balance>=o.price;
+    const c=findCustomer(o.phone); const isCash=o.payment==='cash'||!o.payment; const w=getWallet(o.phone); const canComplete=isCash||o.price===0||totalBalance(w)>=o.price;
     const payBadge=isCash?`<span class="badge" style="background:#F1EFE8;color:#5F5E5A">現金</span>`:`<span class="badge" style="background:#E6F1FB;color:#0C447C">儲值</span>`;
     const balanceHint=!isCash&&o.status!=='done'&&o.price>0?`<div class="kv"><span class="k">儲值餘額</span><span class="v" style="color:${canComplete?'#085041':'#A32D2D'}">${canComplete?'$'+w.balance.toLocaleString()+' ✓':'$'+w.balance.toLocaleString()+' — 不足 $'+(o.price-w.balance).toLocaleString()}</span></div>`:'';
     return`<div class="card"><div class="card-header"><div><div class="card-title">${o.id} — ${o.service}</div><div class="card-sub">${c?(c.name||'未填姓名'):o.phone} / ${o.plate}</div></div><div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px"><span class="badge badge-${o.status}">${STATUS_LABEL[o.status]}</span>${payBadge}</div></div>
@@ -824,46 +1125,104 @@ function renderOrders(){
     <div class="kv"><span class="k">預估時間</span><span class="v">${o.time} 分鐘</span></div>
     ${o.note?`<div class="kv"><span class="k">備註</span><span class="v" style="max-width:200px;text-align:right">${o.note}</span></div>`:''}
     <div class="kv"><span class="k">建立時間</span><span class="v" style="color:var(--text3)">${o.created}</span></div>
+    ${(o.photosBefore&&o.photosBefore.length)?photosHtml(o.photosBefore,'📷 洗車前'):''}
+    ${(o.photosAfter&&o.photosAfter.length)?photosHtml(o.photosAfter,'✅ 洗車後'):''}
+    ${o.status==='done'?`<label style="display:flex;align-items:center;gap:6px;padding:10px 0;cursor:pointer;font-size:13px;color:var(--text2)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M20.94 13A9 9 0 1 1 13 3.06"/><path d="M22 7V3h-4"/><path d="M18 3l4 4"/></svg>補拍洗車後照片<input type="file" accept="image/*" capture="environment" multiple style="display:none" onchange="addAfterPhotos('${o.id}',this)"></label>`:''}
     <div class="status-sel"><button class="${o.status==='pending'?'active-pending':''}" onclick="setStatus('${o.id}','pending')">待處理</button><button class="${o.status==='doing'?'active-doing':''}" onclick="setStatus('${o.id}','doing')">進行中</button><button class="${o.status==='done'?'active-done':''}" onclick="setStatus('${o.id}','done')" ${!canComplete&&o.status!=='done'?'style="opacity:0.45;cursor:not-allowed" title="儲值不足"':''}>完成</button></div>
     ${!canComplete&&o.status!=='done'?`<div style="font-size:11px;color:#A32D2D;margin-top:6px;text-align:right">儲值不足 — <button onclick="goWallet('${o.phone}')" style="font-size:11px;color:#0C447C;background:none;border:none;cursor:pointer;padding:0;font-family:inherit">前往儲值 →</button></div>`:''}
     </div>`;
   }).join('');
 }
 
-function getWallet(phone){if(!db.wallets[phone])db.wallets[phone]={balance:0,txns:[]};return db.wallets[phone];}
+function getWallet(phone){
+  if(!db.wallets[phone])db.wallets[phone]={balance:0,bonus:0,txns:[]};
+  if(db.wallets[phone].bonus===undefined)db.wallets[phone].bonus=0; // migrate old data
+  return db.wallets[phone];
+}
 function nowStr(){const d=new Date();return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;}
-function walletBadgeHtml(balance){if(balance>1000)return`<span class="badge badge-done">$${balance.toLocaleString()}</span>`;if(balance>0)return`<span class="badge badge-b">$${balance.toLocaleString()}</span>`;return`<span class="badge badge-c">$${balance.toLocaleString()}</span>`;}
+function totalBalance(w){return w.balance+(w.bonus||0);}
+function walletBadgeHtml(w){
+  const total=totalBalance(w);
+  if(total>1000)return`<span class="badge badge-done">$${total.toLocaleString()}</span>`;
+  if(total>0)return`<span class="badge badge-b">$${total.toLocaleString()}</span>`;
+  return`<span class="badge badge-c">$0</span>`;
+}
 
 function loadWallet(){
   const phone=walletCurrentPhone; const c=findCustomer(phone); const cardEl=document.getElementById('wallet-card');
   if(!c){cardEl.innerHTML='';return;}
-  const w=getWallet(phone); const lowWarn=w.balance<500;
-  cardEl.innerHTML=`<div class="card" style="${lowWarn?'border-color:#BA7517':''}"><div class="card-header"><div><div class="card-title">${c.name||'（未填姓名）'}</div><div class="card-sub">${c.phone}</div></div>${walletBadgeHtml(w.balance)}</div><div class="kv"><span class="k">儲值餘額</span><span class="v" style="font-size:18px;color:${w.balance<=0?'#A32D2D':w.balance<500?'#854F0B':'#085041'}">$${w.balance.toLocaleString()}</span></div>${lowWarn?`<div style="font-size:12px;color:#854F0B;margin-top:4px">餘額偏低，建議提醒客戶儲值</div>`:''}</div>`;
+  const w=getWallet(phone);
+  const total=totalBalance(w);
+  const lowWarn=total<500;
+  cardEl.innerHTML=`<div class="card" style="${lowWarn?'border-color:#BA7517':''}">
+    <div class="card-header">
+      <div><div class="card-title">${c.name||'（未填姓名）'}</div><div class="card-sub">${c.phone}</div></div>
+      ${walletBadgeHtml(w)}
+    </div>
+    <div class="kv"><span class="k">儲值金</span><span class="v" style="font-size:16px;color:${w.balance<=0?'#A32D2D':'#085041'}">$${w.balance.toLocaleString()}</span></div>
+    <div class="kv"><span class="k">優惠金 <span style="font-size:11px;color:var(--text3)">（推薦/促銷）</span></span><span class="v" style="font-size:16px;color:${(w.bonus||0)<=0?'var(--text3)':'#0C447C'}">$${(w.bonus||0).toLocaleString()}</span></div>
+    <div style="border-top:1px solid var(--border);margin-top:6px;padding-top:8px" class="kv"><span class="k" style="font-weight:600">合計可用</span><span class="v" style="font-size:18px;color:${total<=0?'#A32D2D':total<500?'#854F0B':'#085041'}">$${total.toLocaleString()}</span></div>
+    ${lowWarn?`<div style="font-size:12px;color:#854F0B;margin-top:4px">餘額偏低，建議提醒客戶儲值</div>`:''}
+  </div>`;
   renderTxns(phone);
 }
+
 function renderTxns(phone){
   const w=getWallet(phone); const el=document.getElementById('wallet-txns');
   if(!w.txns.length){el.innerHTML='<div class="empty">尚無交易紀錄</div>';return;}
-  el.innerHTML=[...w.txns].reverse().map(t=>`<div class="hist-item"><div class="hist-dot" style="background:${t.type==='topup'?'#1D9E75':'#E24B4A'}"></div><div class="hist-info"><div style="font-size:13px">${t.type==='topup'?'儲值':'扣款'} — ${t.note||''}</div><div class="hist-date">${t.date}</div></div><div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px;flex-shrink:0"><span style="font-size:13px;font-weight:500;color:${t.type==='topup'?'#085041':'#A32D2D'}">${t.type==='topup'?'+':'-'}$${t.amount.toLocaleString()}</span><span style="font-size:11px;color:var(--text3)">餘 $${t.balance.toLocaleString()}</span></div></div>`).join('');
+  el.innerHTML=[...w.txns].reverse().map(t=>{
+    const isBonus=t.note&&(t.note.includes('推薦')||t.note.includes('優惠金'));
+    const typeLabel=t.type==='topup'?(isBonus?'優惠金':'儲值'):'扣款';
+    const dotColor=t.type==='topup'?(isBonus?'#185FA5':'#1D9E75'):'#E24B4A';
+    const amtColor=t.type==='topup'?(isBonus?'#0C447C':'#085041'):'#A32D2D';
+    return`<div class="hist-item">
+      <div class="hist-dot" style="background:${dotColor}"></div>
+      <div class="hist-info"><div style="font-size:13px">${typeLabel} — ${t.note||''}</div><div class="hist-date">${t.date}</div></div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px;flex-shrink:0">
+        <span style="font-size:13px;font-weight:500;color:${amtColor}">${t.type==='topup'?'+':'-'}$${t.amount.toLocaleString()}</span>
+        <span style="font-size:11px;color:var(--text3)">餘 $${t.balance.toLocaleString()}</span>
+      </div>
+    </div>`;
+  }).join('');
 }
+
 function setTopup(amount){document.getElementById('topup-amount').value=amount;}
 function doTopup(){
   const phone=walletCurrentPhone; const amount=parseInt(document.getElementById('topup-amount').value); const note=document.getElementById('topup-note').value.trim()||'現金儲值'; const msgEl=document.getElementById('topup-msg');
   if(!phone||!findCustomer(phone)){msgEl.innerHTML='<div class="msg msg-error">找不到客戶</div>';return;}
   if(!amount||amount<=0){msgEl.innerHTML='<div class="msg msg-error">請輸入有效金額</div>';return;}
-  const w=getWallet(phone);w.balance+=amount;w.txns.push({type:'topup',amount,note,date:nowStr(),balance:w.balance});
+  const w=getWallet(phone);
+  w.balance+=amount;
+  w.txns.push({type:'topup',amount,note,date:nowStr(),balance:totalBalance(w)});
   document.getElementById('topup-amount').value='';document.getElementById('topup-note').value='';
-  msgEl.innerHTML=`<div class="msg msg-success">已儲值 $${amount.toLocaleString()}，目前餘額 $${w.balance.toLocaleString()}</div>`;
+  msgEl.innerHTML=`<div class="msg msg-success">已儲值 $${amount.toLocaleString()}，儲值金餘額 $${w.balance.toLocaleString()}</div>`;
   loadWallet();
 }
-function deductWallet(phone,amount,note){const w=getWallet(phone);w.balance-=amount;w.txns.push({type:'deduct',amount,note,date:nowStr(),balance:w.balance});return w.balance;}
+
+function deductWallet(phone,amount,note){
+  const w=getWallet(phone);
+  let remain=amount;
+  // 優惠金先扣
+  if((w.bonus||0)>0){
+    const bonusUse=Math.min(w.bonus,remain);
+    w.bonus-=bonusUse;
+    remain-=bonusUse;
+    if(bonusUse>0) w.txns.push({type:'deduct',amount:bonusUse,note:`優惠金 ${note}`,date:nowStr(),balance:totalBalance(w)});
+  }
+  // 再扣儲值金
+  if(remain>0){
+    w.balance-=remain;
+    w.txns.push({type:'deduct',amount:remain,note,date:nowStr(),balance:totalBalance(w)});
+  }
+  return totalBalance(w);
+}
 
 function setStatus(id,status){
   const o=db.orders.find(o=>o.id===id);if(!o)return;
   const isCash=o.payment==='cash'||!o.payment;
   if(status==='done'&&o.status!=='done'&&o.price>0){
     if(isCash){o.status='done';checkReferralReward(o.phone);setTimeout(()=>alert(`✓ 完成\n現金收款 $${o.price.toLocaleString()}`),50);}
-    else{const w=getWallet(o.phone);if(w.balance<o.price){const short=o.price-w.balance;setTimeout(()=>alert(`❌ 無法完成\n\n儲值餘額不足\n需要：$${o.price.toLocaleString()}\n目前：$${w.balance.toLocaleString()}\n差額：$${short.toLocaleString()}\n\n請先至「儲值」頁補儲值`),50);return;}const afterBalance=deductWallet(o.phone,o.price,`${o.service} ${o.plate}`);o.status='done';o.deducted=true;checkReferralReward(o.phone);setTimeout(()=>alert(`✓ 完成\n已從儲值扣款 $${o.price.toLocaleString()}\n剩餘餘額：$${afterBalance.toLocaleString()}`),50);}
+    else{const w=getWallet(o.phone);if(totalBalance(w)<o.price){const short=o.price-w.balance;setTimeout(()=>alert(`❌ 無法完成\n\n儲值餘額不足\n需要：$${o.price.toLocaleString()}\n目前：$${w.balance.toLocaleString()}\n差額：$${short.toLocaleString()}\n\n請先至「儲值」頁補儲值`),50);return;}const afterBalance=deductWallet(o.phone,o.price,`${o.service} ${o.plate}`);o.status='done';o.deducted=true;checkReferralReward(o.phone);setTimeout(()=>alert(`✓ 完成\n已從儲值扣款 $${o.price.toLocaleString()}\n剩餘餘額：$${afterBalance.toLocaleString()}`),50);}
   }else{o.status=status;}
   renderOrders();
 }
@@ -934,17 +1293,8 @@ function renderCashFlow(){
   ${(()=>{const refs=db.referrals||{};const total=Object.keys(refs).length;const rewarded=Object.values(refs).filter(r=>r.rewarded).length;const pending=total-rewarded;if(!total)return'<div style="font-size:12px;color:var(--text3)">尚無推薦紀錄</div>';return`<div class="kv" style="font-size:13px"><span class="k">總推薦人數</span><span class="v">${total} 位</span></div><div class="kv" style="font-size:13px"><span class="k">已兌現獎勵</span><span class="v" style="color:#085041">${rewarded} 位（共 $${rewarded*300}）</span></div><div class="kv" style="font-size:13px"><span class="k">等待首次消費</span><span class="v" style="color:#633806">${pending} 位</span></div>`;})()}`;
 }
 
-db.schedule = [
-  {id:'S001',phone:'0912-111-111',plate:'ABC-1234',service:'鍍膜',date:'2026-05-04',start:'09:00',dur:120},
-  {id:'S002',phone:'0922-222-222',plate:'DEF-5678',service:'精緻洗',date:'2026-05-04',start:'10:00',dur:60},
-  {id:'S003',phone:'0944-444-444',plate:'MNO-2222',service:'打蠟',date:'2026-05-04',start:'10:30',dur:90},
-  {id:'S004',phone:'0933-333-333',plate:'JKL-0001',service:'美容',date:'2026-05-04',start:'13:00',dur:180},
-  {id:'S005',phone:'0922-222-222',plate:'GHI-9999',service:'洗車',date:'2026-05-05',start:'09:30',dur:30},
-  {id:'S006',phone:'0944-444-444',plate:'MNO-2222',service:'鍍膜',date:'2026-05-08',start:'10:00',dur:180},
-  {id:'S007',phone:'0912-111-111',plate:'ABC-1234',service:'洗車',date:'2026-05-08',start:'09:00',dur:30},
-  {id:'S008',phone:'0933-333-333',plate:'JKL-0001',service:'打蠟',date:'2026-05-12',start:'14:00',dur:90},
-  {id:'S009',phone:'0922-222-222',plate:'DEF-5678',service:'美容',date:'2026-05-20',start:'11:00',dur:120},
-];
+// 排程資料已整合至 db.schedule
+
 
 const SLOT_COLORS=['#5DCAA5','#378ADD','#7F77DD','#EF9F27','#D4537E','#D85A30'];
 const SLOT_TEXT  =['#04342C','#042C53','#26215C','#412402','#4B1528','#4A1B0C'];
@@ -1005,36 +1355,215 @@ function renderDay(){
   const entries=(db.schedule||[]).filter(e=>e.date===schedViewDate);
   const HOUR_START=8,HOUR_END=20,PX=48/60;
   const startMins=HOUR_START*60,totalPx=(HOUR_END-HOUR_START)*48;
+  const SNAP=15;
   const colorMap={};entries.forEach(e=>colorMap[e.phone]=getColor(e.phone));
-  document.getElementById('day-legend').innerHTML=Object.entries(colorMap).map(([p,c])=>{const cu=findCustomer(p);return`<div class="sched-legend-item"><div class="sched-legend-dot" style="background:${c.bg}"></div>${cu?(cu.name||'未填姓名'):p}</div>`;}).join('');
+  document.getElementById('day-legend').innerHTML=Object.entries(colorMap).map(([p,c])=>{
+    const cu=findCustomer(p);
+    return`<div class="sched-legend-item"><div class="sched-legend-dot" style="background:${c.bg}"></div>${cu?(cu.name||'未填姓名'):p}</div>`;
+  }).join('');
+
+  // always render grid so drag works even with no entries
   let gridHtml=`<div class="sched-grid" style="margin-top:8px;position:relative">`;
-  for(let h=HOUR_START;h<HOUR_END;h++){gridHtml+=`<div class="sched-hour-label" style="height:48px;display:flex;align-items:flex-start;padding-top:4px">${h}</div><div class="sched-slot"></div>`;}
+  for(let h=HOUR_START;h<HOUR_END;h++){
+    gridHtml+=`<div class="sched-hour-label" style="height:48px;display:flex;align-items:flex-start;padding-top:4px">${h}</div><div class="sched-slot"></div>`;
+  }
   gridHtml+=`<div id="day-overlay" style="position:absolute;top:0;left:36px;right:0;height:${totalPx}px;pointer-events:none"></div></div>`;
-  const tl=document.getElementById('day-timeline');
-  tl.innerHTML=entries.length?gridHtml:'<div class="empty" style="padding-top:32px">今日無排程</div>';
+  document.getElementById('day-timeline').innerHTML = entries.length ? gridHtml : '<div class="empty" style="padding-top:32px">今日無排程</div>';
   if(!entries.length)return;
+
   const overlay=document.getElementById('day-overlay');
-  const today=todayStr();
-  if(schedViewDate===today){const nowM=toMinutes(new Date().toTimeString().slice(0,5));if(nowM>=startMins&&nowM<HOUR_END*60){const nowLine=document.createElement('div');nowLine.className='sched-now-line';nowLine.style.top=Math.round((nowM-startMins)*PX)+'px';overlay.appendChild(nowLine);}}
-  const overlapBuckets={};entries.forEach(e=>{const es=toMinutes(e.start);for(let m=es;m<es+e.dur;m++){if(!overlapBuckets[m])overlapBuckets[m]=[];overlapBuckets[m].push(e.id);}});
+
+  // now line
+  if(schedViewDate===todayStr()){
+    const nowM=toMinutes(new Date().toTimeString().slice(0,5));
+    if(nowM>=startMins&&nowM<HOUR_END*60){
+      const nowLine=document.createElement('div');
+      nowLine.className='sched-now-line';
+      nowLine.style.top=Math.round((nowM-startMins)*PX)+'px';
+      overlay.appendChild(nowLine);
+    }
+  }
+
+  // build blocks
+  rebuildBlocks(entries, overlay, colorMap, startMins, HOUR_END, PX, SNAP);
+
+  // overflow bars
+  rebuildOverflow(entries, overlay, startMins, HOUR_END, PX);
+}
+
+function rebuildBlocks(entries, overlay, colorMap, startMins, HOUR_END, PX, SNAP){
+  overlay.querySelectorAll('.sched-block').forEach(b=>b.remove());
+  const SNAP_M = SNAP || 15;
+
   entries.forEach(e=>{
     const es=toMinutes(e.start);
     const concurrent=entries.filter(o=>o.id!==e.id&&toMinutes(o.start)<es+e.dur&&toMinutes(o.start)+o.dur>es);
     const slotIdx=concurrent.filter(o=>toMinutes(o.start)<es||(toMinutes(o.start)===es&&o.id<e.id)).length%2;
-    const cols=Math.min(concurrent.length+1,2),w=100/cols,l=slotIdx*w;
-    const topPx=(es-startMins)*PX,hPx=Math.max(e.dur*PX,18);
+    const cols=Math.min(concurrent.length+1,2),wPct=100/cols,lPct=slotIdx*wPct;
+    const topPx=(es-startMins)*PX;
+    const hPx=Math.max(e.dur*PX,28);
     const col=colorMap[e.phone];
-    const bl=document.createElement('div');bl.className='sched-block';
-    bl.style.cssText=`top:${Math.round(topPx)}px;height:${Math.round(hPx)}px;left:calc(${l}% + 2px);width:calc(${w}% - 4px);background:${col.bg};color:${col.text};pointer-events:auto`;
-    bl.innerHTML=`<div class="sb-plate">${e.plate}</div><div class="sb-svc">${e.service} ${e.dur}min</div>`;
-    bl.title=`${e.plate} / ${e.service} / ${e.start} (${e.dur}分)`;
-    bl.onclick=()=>confirmDeleteSched(e.id);
+    const cu=findCustomer(e.phone);
+    const name=cu?(cu.name||'未填姓名'):'';
+
+    const bl=document.createElement('div');
+    bl.className='sched-block';
+    bl.dataset.id=e.id;
+    bl.style.cssText=`top:${Math.round(topPx)}px;height:${Math.round(hPx)}px;left:calc(${lPct}% + 2px);width:calc(${wPct}% - 4px);background:${col.bg};color:${col.text};pointer-events:auto;cursor:grab;touch-action:none;user-select:none`;
+    bl.innerHTML=`<div class="sb-plate">${e.plate}</div><div class="sb-svc">${e.service} ${e.dur}min</div>${name?`<div style="font-size:10px;opacity:0.75;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${name}</div>`:''}<div style="position:absolute;bottom:0;left:0;right:0;height:12px;display:flex;align-items:center;justify-content:center;cursor:ns-resize" data-resize="1"><div style="width:22px;height:2px;border-radius:1px;background:currentColor;opacity:0.4"></div></div>`;
+
+    let dragMode=null;
+    let startY=0, origTop=0, origH=0;
+
+    function snapPx(px){ return Math.round(px / (SNAP_M*PX)) * SNAP_M * PX; }
+
+    bl.addEventListener('pointerdown', ev=>{
+      const isResize = ev.target.dataset.resize==='1' || ev.target.closest('[data-resize]');
+      dragMode = isResize ? 'resize' : 'move';
+      startY = ev.clientY;
+      origTop = parseInt(bl.style.top)||0;
+      origH   = parseInt(bl.style.height)||hPx;
+      bl.setPointerCapture(ev.pointerId);
+      bl.style.cursor = dragMode==='resize' ? 'ns-resize' : 'grabbing';
+      bl.style.opacity='0.85';
+      bl.style.zIndex='20';
+      ev.preventDefault();
+    });
+
+    bl.addEventListener('pointermove', ev=>{
+      if(!dragMode) return;
+      const dy = ev.clientY - startY;
+      if(dragMode==='move'){
+        const maxTop = (HOUR_END - startMins/60)*60*PX - origH;
+        const newTop = Math.max(0, Math.min(snapPx(origTop+dy), maxTop));
+        bl.style.top = newTop+'px';
+        const newMin = Math.round(newTop/PX) + startMins;
+        bl.querySelector('.sb-svc').textContent = `${fromMinutes(newMin)} · ${e.dur}min`;
+      } else {
+        const newH = Math.max(SNAP_M*PX, snapPx(origH+dy));
+        bl.style.height = newH+'px';
+        const newDur = Math.round(newH/PX);
+        bl.querySelector('.sb-svc').textContent = `${e.start} · ${newDur}min`;
+      }
+    });
+
+    bl.addEventListener('pointerup', ev=>{
+      const dy = ev.clientY - startY;
+      bl.style.cursor='grab';
+      bl.style.opacity='1';
+      bl.style.zIndex='2';
+
+      if(Math.abs(dy)<5 && dragMode==='move'){
+        // tap → open detail sheet
+        dragMode=null;
+        openSchedDetail(e.id);
+        return;
+      }
+
+      if(dragMode==='move'){
+        const maxTop = (HOUR_END - startMins/60)*60*PX - origH;
+        const newTop = Math.max(0, Math.min(snapPx(origTop+dy), maxTop));
+        const newMin = Math.round(newTop/PX) + startMins;
+        e.start = fromMinutes(Math.max(startMins, Math.min(HOUR_END*60-e.dur, newMin)));
+      } else if(dragMode==='resize'){
+        const newH = Math.max(SNAP_M*PX, snapPx(origH+dy));
+        e.dur = Math.round(newH/PX);
+      }
+      dragMode=null;
+      scheduleSave();
+      // re-render blocks only, stay in day view
+      const allEntries=(db.schedule||[]).filter(en=>en.date===schedViewDate);
+      const cm={};allEntries.forEach(en=>cm[en.phone]=getColor(en.phone));
+      const ov=document.getElementById('day-overlay');
+      rebuildBlocks(allEntries, ov, cm, startMins, HOUR_END, PX, SNAP_M);
+      rebuildOverflow(allEntries, ov, startMins, HOUR_END, PX);
+    });
+
+    bl.addEventListener('pointercancel', ()=>{
+      dragMode=null;
+      bl.style.cursor='grab';
+      bl.style.opacity='1';
+      bl.style.zIndex='2';
+    });
+
     overlay.appendChild(bl);
   });
+}
+
+function rebuildOverflow(entries, overlay, startMins, HOUR_END, PX){
+  overlay.querySelectorAll('.sched-overflow-bar').forEach(b=>b.remove());
+  const overlapBuckets={};
+  entries.forEach(e=>{const es=toMinutes(e.start);for(let m=es;m<es+e.dur;m++){if(!overlapBuckets[m])overlapBuckets[m]=[];overlapBuckets[m].push(e.id);}});
   const overflowRanges=[];let inO=false,oStart=null;
-  for(let m=startMins;m<HOUR_END*60;m++){const cnt=(overlapBuckets[m]||[]).length;if(cnt>2){if(!inO){inO=true;oStart=m;}}else{if(inO){overflowRanges.push({start:oStart,end:m});inO=false;}}}
+  for(let m=startMins;m<HOUR_END*60;m++){
+    const cnt=(overlapBuckets[m]||[]).length;
+    if(cnt>2){if(!inO){inO=true;oStart=m;}}
+    else{if(inO){overflowRanges.push({start:oStart,end:m});inO=false;}}
+  }
   if(inO)overflowRanges.push({start:oStart,end:HOUR_END*60});
-  overflowRanges.forEach(r=>{const topPx=(r.start-startMins)*PX,hPx=(r.end-r.start)*PX;const bl=document.createElement('div');bl.className='sched-overflow-bar';bl.style.cssText=`top:${Math.round(topPx)}px;height:${Math.round(hPx)}px;left:2px;right:2px`;bl.innerHTML=`⚠ 超出2台 ${fromMinutes(r.start)}–${fromMinutes(r.end)} (${r.end-r.start}min)`;overlay.appendChild(bl);});
+  overflowRanges.forEach(r=>{
+    const topPx=(r.start-startMins)*PX,hPx=(r.end-r.start)*PX;
+    const bl=document.createElement('div');bl.className='sched-overflow-bar';
+    bl.style.cssText=`top:${Math.round(topPx)}px;height:${Math.round(hPx)}px;left:2px;right:2px`;
+    bl.innerHTML=`⚠ 超出2台 ${fromMinutes(r.start)}–${fromMinutes(r.end)} (${r.end-r.start}min)`;
+    overlay.appendChild(bl);
+  });
+}
+
+let schedDetailId = null;
+
+function openSchedDetail(id){
+  const e=(db.schedule||[]).find(e=>e.id===id);
+  if(!e)return;
+  schedDetailId=id;
+  const cu=findCustomer(e.phone);
+  const name=cu?(cu.name||'未填姓名'):e.phone;
+  document.getElementById('sched-detail-title').textContent=`${e.plate} · ${name} · ${e.service}`;
+  document.getElementById('sd-date').value=e.date;
+  document.getElementById('sd-start').value=e.start;
+  document.getElementById('sd-dur').value=e.dur;
+  document.getElementById('sd-msg').innerHTML='';
+  document.getElementById('sched-detail-overlay').style.display='block';
+  document.getElementById('sched-detail-sheet').style.display='block';
+}
+
+function closeSchedDetail(){
+  document.getElementById('sched-detail-overlay').style.display='none';
+  document.getElementById('sched-detail-sheet').style.display='none';
+  schedDetailId=null;
+}
+
+function saveSchedDetail(){
+  const e=(db.schedule||[]).find(e=>e.id===schedDetailId);
+  if(!e)return;
+  const newDate=document.getElementById('sd-date').value;
+  const newStart=document.getElementById('sd-start').value;
+  const newDur=parseInt(document.getElementById('sd-dur').value)||e.dur;
+  if(!newDate||!newStart){document.getElementById('sd-msg').innerHTML='<div class="msg msg-error">請填入日期和時間</div>';return;}
+  e.date=newDate; e.start=newStart; e.dur=newDur;
+  scheduleSave();
+  closeSchedDetail();
+  // if date changed, update view date
+  if(newDate!==schedViewDate){
+    schedViewDate=newDate;
+    const[y,m]=newDate.split('-').map(Number);
+    schedMonth={y,m};
+  }
+  renderDay();
+  renderMonth();
+}
+
+function deleteSchedDetail(){
+  if(!schedDetailId)return;
+  const e=(db.schedule||[]).find(e=>e.id===schedDetailId);
+  if(!e)return;
+  if(confirm(`刪除排程？\n${e.plate} / ${e.service}\n${e.date} ${e.start}（${e.dur} 分）`)){
+    db.schedule=db.schedule.filter(s=>s.id!==schedDetailId);
+    scheduleSave();
+    closeSchedDetail();
+    renderDay();
+    renderMonth();
+  }
 }
 
 function schedFillCar(){const phone=document.getElementById('sched-phone').value.trim();const sel=document.getElementById('sched-plate');const c=findCustomer(phone);sel.innerHTML=c?c.cars.map(v=>`<option value="${v.plate}">${v.plate} ${v.type}</option>`).join(''):'<option value="">— 選車 —</option>';checkSchedOverlap();}
@@ -1100,31 +1629,31 @@ function showSaveIndicator() {
 
 // Patch all db-mutating functions to auto-save
 const _origAddCustomer = addCustomer;
-function addCustomer() { _origAddCustomer(); scheduleSave(); }
+addCustomer = function() { _origAddCustomer(); scheduleSave(); };
 
 const _origCreateOrder = createOrder;
-function createOrder() { _origCreateOrder(); scheduleSave(); }
+createOrder = function() { _origCreateOrder(); scheduleSave(); };
 
 const _origSetStatus = setStatus;
-function setStatus(id, status) { _origSetStatus(id, status); scheduleSave(); }
+setStatus = function(id, status) { _origSetStatus(id, status); scheduleSave(); };
 
 const _origTodaySetStatus = todaySetStatus;
-function todaySetStatus(id, status) { _origTodaySetStatus(id, status); scheduleSave(); }
+todaySetStatus = function(id, status) { _origTodaySetStatus(id, status); scheduleSave(); };
 
 const _origDoTopup = doTopup;
-function doTopup() { _origDoTopup(); scheduleSave(); }
+doTopup = function() { _origDoTopup(); scheduleSave(); };
 
 const _origAssignStaff = assignStaff;
-function assignStaff(id, staff) { _origAssignStaff(id, staff); scheduleSave(); }
+assignStaff = function(id, staff) { _origAssignStaff(id, staff); scheduleSave(); };
 
 const _origAddSchedEntry = addSchedEntry;
-function addSchedEntry() { _origAddSchedEntry(); scheduleSave(); }
+addSchedEntry = function() { _origAddSchedEntry(); scheduleSave(); };
 
 const _origConfirmDeleteSched = confirmDeleteSched;
-function confirmDeleteSched(id) { _origConfirmDeleteSched(id); scheduleSave(); }
+confirmDeleteSched = function(id) { _origConfirmDeleteSched(id); scheduleSave(); };
 
 const _origApplyReferral = applyReferral;
-function applyReferral(phone) { _origApplyReferral(phone); scheduleSave(); }
+applyReferral = function(phone) { _origApplyReferral(phone); scheduleSave(); };
 
 initServiceChips();
 
@@ -1132,9 +1661,11 @@ initServiceChips();
   const hasSaved = loadDb();
   const t = todayStr();
   if (!hasSaved) {
-    // 首次使用：把範例資料的日期修正為今天
-    ['O001','O002','O003','O004','O005'].forEach((id,i)=>{const o=db.orders.find(o=>o.id===id);if(o)o.created=`${t} ${['09:30','10:15','08:00','11:00','13:30'][i]}`;});
-    db.schedule.slice(0,4).forEach(e=>{e.date=t;});
+    // 首次使用：把範例訂單日期修正為今天
+    ['O001','O002','O003'].forEach((id,i)=>{
+      const o=db.orders.find(o=>o.id===id);
+      if(o)o.created=`${t} ${['09:30','10:00','11:00'][i]}`;
+    });
   }
   schedViewDate = t;
   const[y,m] = t.split('-').map(Number);
