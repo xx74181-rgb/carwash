@@ -1097,7 +1097,8 @@ function todaySetStatus(id,status){
   const o=db.orders.find(o=>o.id===id);if(!o)return;
   const isCash=o.payment==='cash'||!o.payment;
   if(status==='done'&&o.status!=='done'&&o.price>0){
-    if(!isCash){const w=getWallet(o.phone);if(totalBalance(w)<o.price){alert(`❌ 儲值不足\n需要 $${o.price.toLocaleString()}，目前 $${w.balance.toLocaleString()}`);return;}deductWallet(o.phone,o.price,`${o.service} ${o.plate}`);o.deducted=true;}
+    if(!isCash){const w=getWallet(o.phone);if(totalBalance(w)<o.price){alert(`❌ 儲值不足\n需要 $${o.price.toLocaleString()}，目前 $${totalBalance(w).toLocaleString()}`);return;}deductWallet(o.phone,o.price,`${o.service} ${o.plate}`);o.deducted=true;}
+    checkReferralReward(o.phone);
   }
   o.status=status;renderToday();
 }
