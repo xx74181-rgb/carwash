@@ -55,6 +55,7 @@ textarea{resize:vertical;min-height:72px}
 .badge-pending{background:var(--amber-bg);color:var(--amber-text)}
 .badge-doing{background:var(--blue-bg);color:var(--blue-text)}
 .badge-done{background:var(--green-bg);color:var(--green-text)}
+.badge-cancelled{background:#F0F0F0;color:#888;text-decoration:line-through}
 .divider{border:none;border-top:1px solid var(--border);margin:14px 0}
 .kv{display:flex;justify-content:space-between;align-items:center;font-size:14px;padding:6px 0}
 .kv .k{color:var(--text2)}
@@ -170,11 +171,11 @@ textarea{resize:vertical;min-height:72px}
 <body>
 <div class="app-shell">
   <div class="topbar">
-    <div class="tab active" onclick="switchTab('today')">今日</div>
-    <div class="tab" onclick="switchTab('schedule')">排程</div>
-    <div class="tab" onclick="switchTab('search')">客戶</div>
+    <div class="tab active" onclick="switchTab('today')">今日代辦</div>
+    <div class="tab" onclick="switchTab('schedule')">工作日程</div>
+    <div class="tab" onclick="switchTab('search')">客戶資訊</div>
     <div class="tab" onclick="switchTab('order')">開單</div>
-    <div class="tab" onclick="switchTab('orders')">訂單</div>
+    <div class="tab" onclick="switchTab('orders')">訂單紀錄</div>
     <div class="tab" onclick="switchTab('dashboard')">儀表板</div>
     <div class="tab" onclick="switchTab('settings')">⚙️ 設定</div>
   </div>
@@ -335,6 +336,7 @@ textarea{resize:vertical;min-height:72px}
           <option value="doing">進行中</option>
           <option value="done">已完成</option>
           <option value="noshow">爽約</option>
+          <option value="cancelled">已取消</option>
         </select>
         <select id="filter-staff" onchange="renderOrders()" style="flex:1">
           <option value="">全部美容師</option>
@@ -390,6 +392,14 @@ textarea{resize:vertical;min-height:72px}
       </div>
       <div id="day-legend" style="display:flex;gap:8px;padding:8px 16px;flex-wrap:wrap;border-bottom:1px solid var(--border)"></div>
       <div id="day-timeline" style="padding:0 16px 16px;overflow-y:auto"></div>
+      <!-- 拖曳確認列（拖曳後才顯示） -->
+      <div id="drag-confirm-bar" style="display:none;position:sticky;bottom:0;background:#185FA5;padding:12px 18px;display:none;gap:12px;align-items:center;justify-content:space-between">
+        <span style="font-size:13px;color:#fff;font-weight:500">📌 已移動排程，確認儲存？</span>
+        <div style="display:flex;gap:8px">
+          <button onclick="cancelDragChange()" style="padding:8px 16px;border-radius:var(--radius);border:1.5px solid rgba(255,255,255,0.5);background:none;color:#fff;font-size:13px;cursor:pointer;font-family:inherit">取消</button>
+          <button onclick="confirmDragChange()" style="padding:8px 16px;border-radius:var(--radius);background:#fff;color:#185FA5;font-size:13px;font-weight:600;cursor:pointer;border:none;font-family:inherit">確認儲存</button>
+        </div>
+      </div>
       <div style="padding:12px 16px;border-top:1px solid var(--border)">
         <div style="font-size:13px;color:var(--text2);text-align:center;padding:4px 0">
           排程由<strong>開單頁面</strong>填寫預約時間自動建立 · 點區塊可修改或刪除
@@ -467,6 +477,24 @@ textarea{resize:vertical;min-height:72px}
           <div style="padding:12px 14px;border-top:1px solid var(--border)">
             <button class="btn primary block" onclick="savePriceTable()">儲存價目表</button>
             <div id="price-table-msg" style="margin-top:8px"></div>
+          </div>
+        </div>
+
+        <!-- 班表管理 -->
+        <div class="section-title">班表管理</div>
+        <div class="card" style="padding:0;overflow:hidden">
+          <div style="padding:10px 14px;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+            <div style="font-size:12px;color:var(--text2)">週一固定公休 · 點格子切換出勤</div>
+            <div style="display:flex;gap:6px;align-items:center">
+              <button onclick="shiftPrevWeek()" style="padding:4px 10px;border:1px solid var(--border2);border-radius:var(--radius);background:none;cursor:pointer;font-size:13px">‹</button>
+              <span id="shift-week-label" style="font-size:13px;font-weight:500"></span>
+              <button onclick="shiftNextWeek()" style="padding:4px 10px;border:1px solid var(--border2);border-radius:var(--radius);background:none;cursor:pointer;font-size:13px">›</button>
+            </div>
+          </div>
+          <div id="shift-table" style="overflow-x:auto;-webkit-overflow-scrolling:touch;padding:0"></div>
+          <div style="padding:10px 14px;border-top:1px solid var(--border)">
+            <button class="btn primary block" onclick="saveShift()">儲存班表</button>
+            <div id="shift-msg" style="margin-top:6px"></div>
           </div>
         </div>
 
@@ -644,7 +672,7 @@ function getSuggestedPrice(service, carType) {
   if(idx<0) return row[0];
   return row[idx];
 }
-const STATUS_LABEL = {pending:'待處理',doing:'進行中',done:'完成'};
+const STATUS_LABEL = {pending:'待處理',doing:'進行中',done:'完成',noshow:'爽約',cancelled:'已取消'};
 
 // 全域設定 - 可由中控台修改
 let appSettings = {
@@ -1418,7 +1446,7 @@ const notified=new Set();
 function buildTodayTimeline(orders, nowM){
   // 只顯示有時間的訂單（以建立時間的小時為主）
   const HOUR_START=8, HOUR_END=20;
-  const PX=2.5; // px per minute，壓縮版
+  const PX=0.75; // px per minute，精簡版
   const totalPx=(HOUR_END-HOUR_START)*60*PX;
   const startMins=HOUR_START*60;
 
@@ -1491,13 +1519,63 @@ function buildTodayTimeline(orders, nowM){
   </div>`;
 }
 
+let todayViewOffset = 0; // 0=今天, 1=明天, -1=昨天
+
+function getViewDate(offset){
+  const d=new Date();
+  d.setDate(d.getDate()+offset);
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function todayViewPrev(){ todayViewOffset--; renderToday(); }
+function todayViewNext(){ todayViewOffset++; renderToday(); }
+function todayViewReset(){ todayViewOffset=0; renderToday(); }
+
 function renderToday(){
-  const today=todayStr(); const wdays=['日','一','二','三','四','五','六']; const d=new Date(); const wd=wdays[d.getDay()]; const nowM=d.getHours()*60+d.getMinutes();
-  const todayOrders=db.orders.filter(o=>o.created.startsWith(today)); const todaySched=(db.schedule||[]).filter(e=>e.date===today);
-  const pending=todayOrders.filter(o=>o.status==='pending').length; const doing=todayOrders.filter(o=>o.status==='doing').length; const done=todayOrders.filter(o=>o.status==='done').length; const total=todayOrders.length;
+  const today=todayStr();
+  const viewDate=getViewDate(todayViewOffset);
+  const isToday=viewDate===today;
+  const wdays=['日','一','二','三','四','五','六'];
+  const d=new Date(viewDate+'T12:00:00');
+  const wd=wdays[d.getDay()];
+  const nowD=new Date();
+  const nowM=isToday?nowD.getHours()*60+nowD.getMinutes():0;
+  const todayOrders=db.orders.filter(o=>o.created.startsWith(viewDate));
+  const todaySched=(db.schedule||[]).filter(e=>e.date===viewDate);
+  const pending=todayOrders.filter(o=>o.status==='pending').length;
+  const doing=todayOrders.filter(o=>o.status==='doing').length;
+  const done=todayOrders.filter(o=>o.status==='done').length;
+  const total=todayOrders.length;
   const revenue=todayOrders.filter(o=>o.status==='done').reduce((s,o)=>s+o.price,0);
   const r=18,circ=2*Math.PI*r,pct=total?done/total:0,dash=Math.round(pct*circ);
-  let html=`<div class="today-header"><div style="display:flex;align-items:center;justify-content:space-between"><div><div class="today-date">${today.slice(5).replace('-','/')} 週${wd}</div><div class="today-sub">${doing>0?`目前進行中 ${doing} 台`:'目前無進行中服務'}</div></div><svg width="44" height="44" viewBox="0 0 44 44"><circle cx="22" cy="22" r="${r}" fill="none" stroke="var(--border)" stroke-width="4"/><circle cx="22" cy="22" r="${r}" fill="none" stroke="#1D9E75" stroke-width="4" stroke-dasharray="${dash} ${circ}" stroke-linecap="round" transform="rotate(-90 22 22)"/><text x="22" y="26" text-anchor="middle" font-size="11" font-weight="500" fill="var(--text)">${Math.round(pct*100)}%</text></svg></div></div>
+  const onStaff=getTodayOnStaff();
+  const onStaffHtml=onStaff.length?`<div style="font-size:11px;color:var(--text2);margin-top:4px">出勤：${onStaff.join('、')}</div>`:`<div style="font-size:11px;color:#A32D2D;margin-top:4px">今日無出勤員工</div>`;
+
+  // 日期標籤
+  let dateLabel=viewDate.slice(5).replace('-','/') + ' 週' + wd;
+  if(todayViewOffset===0) dateLabel='今天 ' + dateLabel;
+  else if(todayViewOffset===1) dateLabel='明天 ' + dateLabel;
+  else if(todayViewOffset===-1) dateLabel='昨天 ' + dateLabel;
+  else if(todayViewOffset>0) dateLabel=`${todayViewOffset}天後 ` + dateLabel;
+  else dateLabel=`${-todayViewOffset}天前 ` + dateLabel;
+
+  let html=`<div class="today-header">
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <div style="flex:1">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:2px">
+          <button onclick="todayViewPrev()" style="width:32px;height:32px;border-radius:50%;border:1px solid var(--border2);background:none;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center">‹</button>
+          <div>
+            <div class="today-date" style="font-size:16px">${dateLabel}</div>
+            <div class="today-sub">${isToday?(doing>0?`目前進行中 ${doing} 台`:'目前無進行中服務'):(todayViewOffset>0?'預覽未來排程':'歷史紀錄')}</div>
+          </div>
+          <button onclick="todayViewNext()" style="width:32px;height:32px;border-radius:50%;border:1px solid var(--border2);background:none;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center">›</button>
+          ${!isToday?`<button onclick="todayViewReset()" style="font-size:11px;padding:4px 8px;border-radius:99px;background:var(--green-bg);color:var(--green-text);border:none;cursor:pointer;font-family:inherit">回今天</button>`:''}
+        </div>
+        ${onStaffHtml}
+      </div>
+      <svg width="44" height="44" viewBox="0 0 44 44" style="flex-shrink:0"><circle cx="22" cy="22" r="${r}" fill="none" stroke="var(--border)" stroke-width="4"/><circle cx="22" cy="22" r="${r}" fill="none" stroke="#1D9E75" stroke-width="4" stroke-dasharray="${dash} ${circ}" stroke-linecap="round" transform="rotate(-90 22 22)"/><text x="22" y="26" text-anchor="middle" font-size="11" font-weight="500" fill="var(--text)">${Math.round(pct*100)}%</text></svg>
+    </div>
+  </div>
   <div class="today-stats"><div class="today-stat"><div class="today-stat-val">${pending}</div><div class="today-stat-label">待處理</div></div><div class="today-stat"><div class="today-stat-val" style="color:#185FA5">${doing}</div><div class="today-stat-label">進行中</div></div><div class="today-stat"><div class="today-stat-val" style="color:#1D9E75">${done}</div><div class="today-stat-label">完成</div></div></div>`;
 
   // ── 今日迷你時間軸 ──
@@ -1512,6 +1590,7 @@ function renderToday(){
   const waiting=workItems.filter(w=>w.order?.status==='pending'||(!w.order&&w.sched));
   const finished=workItems.filter(w=>w.order?.status==='done');
   const noshows=workItems.filter(w=>w.order?.status==='noshow');
+  const cancelled=workItems.filter(w=>w.order?.status==='cancelled');
   function buildCard(w,idx){
     const o=w.order,s=w.sched; const plate=o?.plate||s?.plate||'—'; const service=o?.service||s?.service||'—';
     const timeStr=s?s.start:(o?.created?.slice(11,16)||''); const dur=s?.dur||o?.time||0;
@@ -1523,9 +1602,9 @@ function renderToday(){
     const isBlack=tier==='black';
     // 爽約歷史警告
     const noshowCount=customer?db.orders.filter(o2=>o2.phone===customer.phone&&o2.status==='noshow').length:0;
-    const sc={pending:{bg:'#FAEEDA',c:'#633806'},doing:{bg:'#E6F1FB',c:'#0C447C'},done:{bg:'#E1F5EE',c:'#085041'},noshow:{bg:'#FCEBEB',c:'#791F1F'}}[status]||{bg:'#FAEEDA',c:'#633806'};
-    const numBg={pending:'#FAEEDA',doing:'#E6F1FB',done:'#E1F5EE',noshow:'#FCEBEB'}[status]||'#FAEEDA';
-    const numC={pending:'#633806',doing:'#0C447C',done:'#085041',noshow:'#791F1F'}[status]||'#633806';
+    const sc={pending:{bg:'#FAEEDA',c:'#633806'},doing:{bg:'#E6F1FB',c:'#0C447C'},done:{bg:'#E1F5EE',c:'#085041'},noshow:{bg:'#FCEBEB',c:'#791F1F'},cancelled:{bg:'#F0F0F0',c:'#888'}}[status]||{bg:'#FAEEDA',c:'#633806'};
+    const numBg={pending:'#FAEEDA',doing:'#E6F1FB',done:'#E1F5EE',noshow:'#FCEBEB',cancelled:'#F0F0F0'}[status]||'#FAEEDA';
+    const numC={pending:'#633806',doing:'#0C447C',done:'#085041',noshow:'#791F1F',cancelled:'#888'}[status]||'#633806';
     const memberIdStr=customer?.memberId||'';
     const isLate=s&&toMinutes(s.start)<nowM&&(status==='pending'||o?.lateMarked);
     const cardBorder=isNoshow?'border-color:#A32D2D':isLate?'border-color:#E24B4A':isBlack?'border-color:#FFD700;border-width:2px':'';
@@ -1552,6 +1631,7 @@ function renderToday(){
         </div>
       </div>
       ${note?`<div class="work-note">${note}</div>`:''}
+      ${o?.handoverNote?`<div style="padding:8px 14px;font-size:12px;color:#633806;background:#FAEEDA;border-top:1px dashed var(--border)">📋 交接：${o.handoverNote}</div>`:''}
       <div class="work-actions">
         ${o&&!isNoshow?`
           <button class="work-action-btn ${status==='pending'?'active-pending':''}" onclick="todaySetStatus('${o.id}','pending')">待處理</button>
@@ -1559,11 +1639,22 @@ function renderToday(){
           <button class="work-action-btn ${status==='done'?'active-done':''}" onclick="todaySetStatus('${o.id}','done')">完成</button>
           <button class="work-action-btn ${o.lateMarked?'active-late':''}" onclick="markLate('${o.id}')">遲到</button>
           <button class="work-action-btn" onclick="markNoshow('${o.id}')" style="color:#A32D2D">爽約</button>
+          <button class="work-action-btn" onclick="cancelOrder('${o.id}')" style="color:#888">取消</button>
         `:o&&isNoshow?`
           <div style="flex:1;padding:10px;font-size:12px;color:#791F1F;text-align:center">已標記爽約</div>
           <button class="work-action-btn" onclick="todaySetStatus('${o.id}','pending')" style="color:#185FA5">復原</button>
         `:o===null?`<button class="work-action-btn" onclick="goOrder('${s?.phone||''}')">開單 →</button>`:''}
       </div>
+      ${o&&!isNoshow?`
+      <div id="quick-note-area-${o.id}" style="display:none;padding:8px 14px;border-top:1px solid var(--border);gap:6px;display:none">
+        <div style="font-size:11px;color:var(--text2);margin-bottom:4px">快速備註 / 交接留言</div>
+        <div style="display:flex;gap:6px">
+          <input id="quick-note-input-${o.id}" placeholder="輸入備註或交接說明..." style="flex:1;font-size:13px;padding:8px 10px;border:1.5px solid var(--border2);border-radius:var(--radius)" value="${o.handoverNote||''}" />
+          <button onclick="saveQuickNote('${o.id}')" style="padding:8px 14px;background:var(--green);color:#fff;border:none;border-radius:var(--radius);font-size:13px;cursor:pointer;font-family:inherit;flex-shrink:0">儲存</button>
+        </div>
+      </div>
+      <button onclick="toggleQuickNote('${o.id}')" style="width:100%;padding:8px;font-size:12px;color:var(--text2);background:none;border:none;border-top:0.5px solid var(--border);cursor:pointer;font-family:inherit;text-align:left">✏️ ${o.handoverNote?'修改備註':'新增備註 / 交接'}</button>
+      `:''}
     </div>`;
   }
   if(!workItems.length){html+=`<div class="today-empty">今日尚無排程或訂單<br><br><button class="btn primary" onclick="switchTab('order')">立即開單</button></div>`;}
@@ -1572,6 +1663,7 @@ function renderToday(){
     if(waiting.length){html+=`<div class="today-section">待處理</div>`;html+=waiting.map((w,i)=>buildCard(w,i)).join('');}
     if(finished.length){html+=`<div class="today-section">已完成 — 今日營收 $${revenue.toLocaleString()}</div>`;html+=finished.map((w,i)=>buildCard(w,i)).join('');}
     if(noshows.length){html+=`<div class="today-section" style="color:#A32D2D">爽約（${noshows.length}）</div>`;html+=noshows.map((w,i)=>buildCard(w,i)).join('');}
+    if(cancelled.length){html+=`<div class="today-section" style="color:#888">已取消（${cancelled.length}）</div>`;html+=cancelled.map((w,i)=>buildCard(w,i)).join('');}
   }
   document.getElementById('today-content').innerHTML=html;
 }
@@ -1719,6 +1811,37 @@ function submitStaffConfirm(){
   renderOrders();
 }
 
+function toggleQuickNote(id){
+  const area=document.getElementById(`quick-note-area-${id}`);
+  if(!area)return;
+  const isHidden=area.style.display==='none'||!area.style.display;
+  area.style.display=isHidden?'block':'none';
+  if(isHidden){
+    const input=document.getElementById(`quick-note-input-${id}`);
+    if(input) input.focus();
+  }
+}
+
+function saveQuickNote(id){
+  const o=db.orders.find(o=>o.id===id);if(!o)return;
+  const input=document.getElementById(`quick-note-input-${id}`);
+  if(!input)return;
+  o.handoverNote=input.value.trim();
+  scheduleSave();
+  renderToday();
+}
+
+function cancelOrder(id){
+  const o=db.orders.find(o=>o.id===id);if(!o)return;
+  const c=findCustomer(o.phone);
+  if(!confirm(`取消此訂單？\n${o.plate} — ${o.service}\n${c?(c.name||'未填姓名'):o.phone}\n\n訂單將保留，可隨時復原`))return;
+  o.status='cancelled';
+  o.cancelledAt=nowStr();
+  scheduleSave();
+  renderToday();
+  renderOrders();
+}
+
 function markLate(id){
   const o=db.orders.find(o=>o.id===id);if(!o)return;
   o.lateMarked=!o.lateMarked;
@@ -1740,7 +1863,13 @@ function todaySetStatus(id,status){
     openPaySheet(id);
     return;
   }
-  o.status=status;renderToday();
+  // 從完成回退需確認
+  if(o.status==='done'&&status!=='done'){
+    if(!confirm(`確認要將已完成訂單改回「${status==='doing'?'進行中':'待處理'}」？\n\n${o.plate} — ${o.service}`))return;
+  }
+  o.status=status;
+  scheduleSave();
+  renderToday();
 }
 
 function setStatus(id,status){
@@ -1749,7 +1878,13 @@ function setStatus(id,status){
     openPaySheet(id);
     return;
   }
-  o.status=status;renderOrders();
+  // 從完成回退需確認
+  if(o.status==='done'&&status!=='done'){
+    if(!confirm(`確認要將已完成訂單改回「${status==='doing'?'進行中':'待處理'}」？\n\n${o.plate} — ${o.service}`))return;
+  }
+  o.status=status;
+  scheduleSave();
+  renderOrders();
 }
 function todayNotify(id){
   const o=db.orders.find(o=>o.id===id);if(!o)return;
@@ -1858,11 +1993,25 @@ function renderOrders(){
       ${o.completedAt?`<div class="kv"><span class="k">完成時間</span><span class="v" style="color:var(--text3)">${o.completedAt}</span></div>`:''}
       ${o.staffConfirmed?.length?`<div class="kv"><span class="k">確認員工</span><span class="v">${o.staffConfirmed.join('、')}</span></div>`:''}
       <div class="kv"><span class="k">建立時間</span><span class="v" style="color:var(--text3)">${o.created}</span></div>
-      ${o.status!=='done'?`<div class="status-sel" style="margin-top:8px"><button class="${o.status==='pending'?'active-pending':''}" onclick="setStatus('${o.id}','pending')">待處理</button><button class="${o.status==='doing'?'active-doing':''}" onclick="setStatus('${o.id}','doing')">進行中</button><button class="${o.status==='done'?'active-done':''}" onclick="setStatus('${o.id}','done')">完成</button></div>`:''}
-      <button onclick="deleteOrder('${o.id}')" style="width:100%;margin-top:8px;padding:10px;border-radius:var(--radius);border:1.5px solid #E24B4A;background:none;color:#A32D2D;font-size:13px;cursor:pointer;font-family:inherit;min-height:44px">刪除訂單</button>
+      ${o.status!=='done'?`<div class="status-sel" style="margin-top:8px"><button class="${o.status==='pending'?'active-pending':''}" onclick="setStatus('${o.id}','pending')">待處理</button><button class="${o.status==='doing'?'active-doing':''}" onclick="setStatus('${o.id}','doing')">進行中</button><button class="${o.status==='done'?'active-done':''}" onclick="setStatus('${o.id}','done')">完成</button><button onclick="cancelOrder('${o.id}')" style="color:#888;font-size:13px;padding:8px 12px;border:none;background:none;cursor:pointer;font-family:inherit;border-left:1px solid var(--border)">取消</button></div>`:''}
+      ${o.status==='cancelled'?`<div style="margin-top:8px;padding:10px;background:#F5F5F5;border-radius:var(--radius);font-size:13px;color:#888;text-align:center">已取消 <button onclick="setStatus('${o.id}','pending')" style="color:#185FA5;background:none;border:none;cursor:pointer;font-size:13px;font-family:inherit;margin-left:8px">復原</button></div>`:''}
+      ${o.deleteRequested?
+        `<div style="margin-top:8px;padding:12px;background:#FFF5F5;border-radius:var(--radius);border:1.5px solid #E24B4A">
+          <div style="font-size:12px;color:#A32D2D;font-weight:600;margin-bottom:8px">⏳ 申請刪除中，等待店長審核</div>
+          <div style="display:flex;gap:8px;margin-bottom:8px">
+            <input id="delete-pwd-${o.id}" type="password" placeholder="輸入店長密碼" maxlength="10"
+              style="flex:1;padding:10px;border:1.5px solid #E24B4A;border-radius:var(--radius);font-size:14px;font-family:inherit"
+              onkeydown="if(event.key==='Enter')approveDelete('${o.id}')" />
+            <button onclick="approveDelete('${o.id}')" style="padding:10px 14px;border-radius:var(--radius);background:#A32D2D;color:#fff;border:none;font-size:13px;cursor:pointer;font-family:inherit;flex-shrink:0">🔐 確認刪除</button>
+          </div>
+          <button onclick="cancelDeleteRequest('${o.id}')" style="width:100%;padding:8px;border-radius:var(--radius);border:1px solid #ccc;background:none;color:#666;font-size:12px;cursor:pointer;font-family:inherit">取消申請</button>
+          <div id="delete-pwd-msg-${o.id}" style="font-size:12px;color:#A32D2D;margin-top:6px;min-height:16px"></div>
+        </div>`:
+        `<button onclick="requestDelete('${o.id}')" style="width:100%;margin-top:8px;padding:10px;border-radius:var(--radius);border:1.5px solid #E24B4A;background:none;color:#A32D2D;font-size:13px;cursor:pointer;font-family:inherit;min-height:44px">申請刪除</button>`
+      }
     </div>`:'';
 
-    return`<div class="card" style="margin-bottom:8px;padding:14px">${header}${detail}</div>`;
+    return`<div class="card" style="margin-bottom:8px;padding:14px${o.deleteRequested?';opacity:0.55;background:#F5F5F5':''}">${header}${detail}</div>`;
   }
 
   let html='';
@@ -2013,11 +2162,36 @@ function deductWallet(phone,amount,note){
   return totalBalance(w);
 }
 
-function deleteOrder(id){
+function requestDelete(id){
   const o=db.orders.find(o=>o.id===id);if(!o)return;
   const c=findCustomer(o.phone);
-  if(!confirm(`刪除訂單？\n${o.id} — ${o.service}\n${c?(c.name||'未填姓名'):o.phone} / ${o.plate}\n$${o.price.toLocaleString()}\n\n此操作無法復原`))return;
-  // 如果已扣款，退回儲值
+  if(!confirm(`申請刪除此訂單？\n${o.id} — ${o.service}\n${c?(c.name||'未填姓名'):o.phone} / ${o.plate}\n\n訂單將標記為「待審核刪除」，需店長密碼確認才會真正刪除`))return;
+  o.deleteRequested=true;
+  o.deleteRequestedAt=nowStr();
+  scheduleSave();
+  renderOrders();
+}
+
+function cancelDeleteRequest(id){
+  const o=db.orders.find(o=>o.id===id);if(!o)return;
+  o.deleteRequested=false;
+  delete o.deleteRequestedAt;
+  scheduleSave();
+  renderOrders();
+}
+
+function approveDelete(id){
+  const o=db.orders.find(o=>o.id===id);if(!o)return;
+  const input=document.getElementById(`delete-pwd-${id}`);
+  const msgEl=document.getElementById(`delete-pwd-msg-${id}`);
+  const pwd=input?input.value:'';
+  if(!pwd){if(msgEl)msgEl.textContent='請輸入店長密碼';return;}
+  if(pwd!==appSettings.adminPwd){
+    if(msgEl)msgEl.textContent='密碼錯誤，請重試';
+    if(input){input.value='';input.focus();}
+    return;
+  }
+  if(!confirm(`確認刪除訂單？\n${o.id} — ${o.service} / ${o.plate}\n此操作無法復原`))return;
   if(o.deducted&&o.payment==='wallet'&&o.price>0){
     const w=getWallet(o.phone);
     w.balance+=o.price;
@@ -2026,6 +2200,7 @@ function deleteOrder(id){
   db.orders=db.orders.filter(ord=>ord.id!==id);
   scheduleSave();
   renderOrders();
+  renderToday();
 }
 
 function renderHistoryList(){
@@ -2097,6 +2272,8 @@ function renderSettingsContent(){
   renderStaffEditor();
   // 價目表
   renderPriceTableEditor();
+  // 班表
+  renderShiftTable();
 }
 
 function renderPriceTableEditor(){
@@ -2366,6 +2543,111 @@ function clearAllData(){
   renderToday();renderCustomerList();renderOrders();
 }
 
+/* ═══ 班表系統 ═══ */
+let shiftWeekOffset = 0; // 0=本週
+
+function getShiftWeekStart(offset){
+  const d = new Date();
+  const day = d.getDay(); // 0=日
+  const monday = new Date(d);
+  monday.setDate(d.getDate() - (day===0?6:day-1) + offset*7);
+  monday.setHours(0,0,0,0);
+  return monday;
+}
+
+function getShiftKey(dateStr, staffName){
+  return `shift:${dateStr}:${staffName}`;
+}
+
+function isMonday(dateStr){
+  return new Date(dateStr+'T12:00:00').getDay()===1;
+}
+
+function getShiftStatus(dateStr, staffName){
+  if(isMonday(dateStr)) return 'off'; // 週一固定公休
+  const key=`shift:${dateStr}:${staffName}`;
+  const saved=(appSettings.shifts||{})[key];
+  return saved||'on'; // 預設上班
+}
+
+function toggleShift(dateStr, staffName){
+  if(isMonday(dateStr)) return; // 週一不可改
+  if(!appSettings.shifts) appSettings.shifts={};
+  const cur=getShiftStatus(dateStr, staffName);
+  const key=`shift:${dateStr}:${staffName}`;
+  appSettings.shifts[key] = cur==='on'?'off':'on';
+  renderShiftTable();
+}
+
+function shiftPrevWeek(){ shiftWeekOffset--; renderShiftTable(); }
+function shiftNextWeek(){ shiftWeekOffset++; renderShiftTable(); }
+
+function renderShiftTable(){
+  const el=document.getElementById('shift-table');
+  const label=document.getElementById('shift-week-label');
+  if(!el)return;
+
+  const weekStart=getShiftWeekStart(shiftWeekOffset);
+  const days=['日','一','二','三','四','五','六'];
+  const dates=[];
+  // 週一到週日（週一公休放第一格）
+  for(let i=0;i<7;i++){
+    const d=new Date(weekStart);
+    d.setDate(weekStart.getDate()+i);
+    dates.push(d);
+  }
+  const firstDate=dates[0];
+  const lastDate=dates[6];
+  if(label) label.textContent=`${firstDate.getMonth()+1}/${firstDate.getDate()} — ${lastDate.getMonth()+1}/${lastDate.getDate()}`;
+
+  const staffNames=appSettings.staff.map(s=>typeof s==='string'?s:s.name);
+  const today=todayStr();
+
+  let html=`<table style="width:100%;border-collapse:collapse;font-size:12px;min-width:380px">
+    <thead><tr style="background:var(--bg2)">
+      <th style="padding:8px 10px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap;font-size:11px">員工</th>
+      ${dates.map(d=>{
+        const ds=d.toISOString().slice(0,10);
+        const isToday=ds===today;
+        const isMon=d.getDay()===1;
+        return`<th style="padding:6px 4px;text-align:center;border-bottom:1px solid var(--border);white-space:nowrap;font-size:11px;${isMon?'background:#FFF3E0;color:#854F0B':isToday?'background:#E1F5EE;color:#085041':''}">${days[d.getDay()]}<br>${d.getDate()}</th>`;
+      }).join('')}
+    </tr></thead><tbody>`;
+
+  staffNames.forEach(name=>{
+    html+=`<tr><td style="padding:8px 10px;font-weight:500;border-bottom:0.5px solid var(--border);white-space:nowrap">${name}</td>`;
+    dates.forEach(d=>{
+      const ds=d.toISOString().slice(0,10);
+      const isMon=d.getDay()===1;
+      const status=getShiftStatus(ds, name);
+      const isOn=status==='on';
+      const isToday=ds===today;
+      html+=`<td style="padding:4px;text-align:center;border-bottom:0.5px solid var(--border);${isToday?'background:#F0FBF5':''}">
+        <div onclick="${isMon?'':` toggleShift('${ds}','${name}')`}" style="width:36px;height:30px;border-radius:6px;margin:0 auto;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;cursor:${isMon?'default':'pointer'};${isMon?'background:#FFF3E0;color:#854F0B':isOn?'background:#E1F5EE;color:#085041':'background:#F5F5F5;color:#999'}">
+          ${isMon?'休':isOn?'班':'休'}
+        </div>
+      </td>`;
+    });
+    html+=`</tr>`;
+  });
+
+  html+=`</tbody></table>`;
+  el.innerHTML=html;
+}
+
+function saveShift(){
+  saveSettings();
+  const msgEl=document.getElementById('shift-msg');
+  if(msgEl) msgEl.innerHTML='<div class="msg msg-success">班表已儲存</div>';
+  setTimeout(()=>{ if(msgEl) msgEl.innerHTML=''; },2000);
+}
+
+function getTodayOnStaff(){
+  const today=todayStr();
+  const staffNames=appSettings.staff.map(s=>typeof s==='string'?s:s.name);
+  return staffNames.filter(n=>getShiftStatus(today,n)==='on');
+}
+
 function changePassword(){
   const np=document.getElementById('new-pwd').value;
   const nc=document.getElementById('new-pwd-confirm').value;
@@ -2594,6 +2876,26 @@ function openDay(ds){
 function backToMonth(){schedView='month';document.getElementById('sched-month-view').style.display='block';document.getElementById('sched-day-view').style.display='none';renderMonth();}
 function dayNav(dir){const d=new Date(schedViewDate+'T12:00:00');d.setDate(d.getDate()+dir);schedViewDate=d.toISOString().slice(0,10);const[y,m]=schedViewDate.split('-').map(Number);schedMonth={y,m};renderDay();}
 
+let schedBeforeDrag = null; // 拖曳前備份
+
+function confirmDragChange(){
+  scheduleSave();
+  schedBeforeDrag = null;
+  const bar=document.getElementById('drag-confirm-bar');
+  if(bar) bar.style.display='none';
+}
+
+function cancelDragChange(){
+  // 還原拖曳前狀態
+  if(schedBeforeDrag){
+    db.schedule=schedBeforeDrag;
+    schedBeforeDrag=null;
+  }
+  const bar=document.getElementById('drag-confirm-bar');
+  if(bar) bar.style.display='none';
+  renderDay();
+}
+
 function renderDay(){
   const wdays=['日','一','二','三','四','五','六'];
   const d=new Date(schedViewDate+'T12:00:00');
@@ -2673,6 +2975,8 @@ function rebuildBlocks(entries, overlay, colorMap, startMins, HOUR_END, PX, SNAP
       bl.style.cursor = dragMode==='resize' ? 'ns-resize' : 'grabbing';
       bl.style.opacity='0.85';
       bl.style.zIndex='20';
+      // 備份排程狀態供取消使用
+      if(!schedBeforeDrag) schedBeforeDrag=JSON.parse(JSON.stringify(db.schedule));
       ev.preventDefault();
     });
 
@@ -2716,8 +3020,10 @@ function rebuildBlocks(entries, overlay, colorMap, startMins, HOUR_END, PX, SNAP
         e.dur = Math.round(newH/PX);
       }
       dragMode=null;
-      scheduleSave();
-      // re-render blocks only, stay in day view
+      // 顯示確認列，暫不儲存
+      const bar=document.getElementById('drag-confirm-bar');
+      if(bar) bar.style.display='flex';
+      // re-render blocks only
       const allEntries=(db.schedule||[]).filter(en=>en.date===schedViewDate);
       const cm={};allEntries.forEach(en=>cm[en.phone]=getColor(en.phone));
       const ov=document.getElementById('day-overlay');
