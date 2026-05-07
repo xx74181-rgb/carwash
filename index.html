@@ -217,6 +217,7 @@ textarea{resize:vertical;min-height:72px}
     <div class="tab" onclick="switchTab('schedule')">工作日程</div>
     <div class="tab" onclick="switchTab('search')">客戶資訊</div>
     <div class="tab" onclick="switchTab('order')">開單</div>
+    <div class="tab" onclick="switchTab('checkout')">結單</div>
     <div class="tab" onclick="switchTab('orders')">訂單紀錄</div>
     <div class="tab" onclick="switchTab('admin')">中控台</div>
   </div>
@@ -287,9 +288,23 @@ textarea{resize:vertical;min-height:72px}
   </div>
 
   <!-- 開單 -->
+  <!-- 開單 -->
   <div id="screen-order" class="screen">
-    <div class="section-title" style="margin-top:0">選擇服務項目（可複選，工時自動加總）</div>
-    <!-- 建議售價 Banner -->
+    <div class="section-title" style="margin-top:0">選擇客戶 <span style="color:#A32D2D">*</span></div>
+    <div class="row" style="margin-bottom:4px">
+      <div class="col"><input id="order-search" placeholder="輸入電話、姓名或車牌" oninput="fillOrderCustomer()"
+        style="border-color:#E24B4A;border-width:2px" /></div>
+    </div>
+    <div id="order-search-list" style="margin-bottom:6px"></div>
+    <button onclick="openWalkInSheet()" style="width:100%;padding:12px;border-radius:var(--radius);border:2px dashed #E24B4A;background:#FFF5F5;color:#A32D2D;font-size:14px;cursor:pointer;font-family:inherit;margin-bottom:10px;font-weight:600">
+      📞 預約客戶（無會員）→ 快速建檔
+    </button>
+    <div id="order-customer-info"></div>
+    <div class="section-title">選擇車輛</div>
+    <div id="order-cars" class="chips"><span style="color:var(--text3);font-size:12px">查詢客戶後顯示車輛</span></div>
+    <div id="upsell-hint"></div>
+
+    <div class="section-title">選擇服務項目（可複選，工時自動加總）</div>
     <div id="price-banner" style="display:none;padding:10px 14px;background:#E1F5EE;border-radius:var(--radius-lg);margin-bottom:10px;border:1.5px solid #1D9E75">
       <div style="display:flex;align-items:center;justify-content:space-between">
         <div>
@@ -305,16 +320,6 @@ textarea{resize:vertical;min-height:72px}
     </div>
     <div class="chips" id="service-chips"></div>
     <div id="service-summary" style="display:none"></div>
-
-    <div class="section-title">選擇客戶</div>
-    <div class="row" style="margin-bottom:4px">
-      <div class="col"><input id="order-search" placeholder="輸入電話、姓名或車牌" oninput="fillOrderCustomer()" /></div>
-    </div>
-    <div id="order-search-list" style="margin-bottom:6px"></div>
-    <div id="order-customer-info"></div>
-    <div class="section-title">選擇車輛</div>
-    <div id="order-cars" class="chips"><span style="color:var(--text3);font-size:12px">查詢客戶後顯示車輛</span></div>
-    <div id="upsell-hint"></div>
 
     <div class="section-title">服務細節</div>
     <div class="row">
@@ -335,7 +340,13 @@ textarea{resize:vertical;min-height:72px}
     <div id="workday-summary" style="font-size:13px;color:var(--text2);margin-bottom:4px;min-height:20px"></div>
     <div class="section-title">預約時間</div>
     <div class="row">
-      <div class="col"><label>開始日期</label><input id="order-appt-date" type="date" oninput="calcWorkDays()" /></div>
+      <div class="col"><label>開始日期</label>
+        <div style="display:flex;gap:6px;align-items:center">
+          <button onclick="document.getElementById('order-appt-date').showPicker?document.getElementById('order-appt-date').showPicker():document.getElementById('order-appt-date').click()" style="padding:0 12px;height:52px;border-radius:var(--radius);border:1.5px solid var(--border2);background:var(--bg);color:var(--text);font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;font-family:inherit;flex-shrink:0">📅 預約</button>
+          <input id="order-appt-date" type="date" oninput="calcWorkDays()" style="flex:1" />
+          <button onclick="document.getElementById('order-appt-date').value=todayStr();calcWorkDays();" style="padding:0 12px;height:52px;border-radius:var(--radius);border:1.5px solid var(--green);background:var(--green-bg);color:var(--green-text);font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;font-family:inherit;flex-shrink:0">今日</button>
+        </div>
+      </div>
       <div class="col"><label>開始時間</label>
         <select id="order-appt-time" onchange="calcWorkDays()">
           <option value="">— 選擇時間 —</option>
@@ -365,6 +376,13 @@ textarea{resize:vertical;min-height:72px}
     <div class="col" style="margin-bottom:12px"><label>備註（選填）</label><textarea id="order-note" placeholder="車況特殊說明、客戶要求..."></textarea></div>
     <button class="btn primary block" onclick="createOrder()">確認開單</button>
     <div id="order-msg" style="margin-top:8px"></div>
+  </div>
+  <!-- 結單 -->
+  <div id="screen-checkout" class="screen" style="padding:0">
+    <div style="padding:12px 18px;background:var(--bg);border-bottom:1.5px solid var(--border);position:sticky;top:52px;z-index:5">
+      <div style="font-size:13px;color:var(--text2)">點擊訂單進行結帳完成</div>
+    </div>
+    <div id="checkout-list" style="padding:14px 18px"></div>
   </div>
 
   <!-- 訂單管理 -->
@@ -718,6 +736,69 @@ textarea{resize:vertical;min-height:72px}
   <button class="btn block" style="margin-top:8px;color:var(--text3)" onclick="closeStaffConfirm()">取消</button>
 </div>
 
+<!-- 預約客戶快速建檔 sheet -->
+<div id="walkin-overlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.4);z-index:60" onclick="closeWalkInSheet()"></div>
+<div id="walkin-sheet" style="display:none;position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:560px;background:var(--bg);border-radius:20px 20px 0 0;z-index:61;padding:20px 18px 32px">
+  <div style="width:36px;height:4px;background:var(--border2);border-radius:2px;margin:0 auto 16px"></div>
+  <div style="font-size:17px;font-weight:700;margin-bottom:4px">📞 預約客戶快速建檔</div>
+  <div style="font-size:13px;color:var(--text2);margin-bottom:16px">填越多越好，至少填電話或姓氏，之後再補齊。</div>
+  <div class="row">
+    <div class="col"><label>姓名 / 姓氏</label><input id="walkin-name" placeholder="王先生" /></div>
+    <div class="col"><label>電話</label><input id="walkin-phone" type="tel" placeholder="0912345678" maxlength="10" oninput="this.value=this.value.replace(/[^0-9]/g,'')" /></div>
+  </div>
+  <div class="row">
+    <div class="col"><label>車牌（可空）</label><input id="walkin-plate" placeholder="ABC1234" style="text-transform:uppercase" /></div>
+    <div class="col"><label>車型（可空）</label>
+      <select id="walkin-cartype">
+        <option value="轎車">轎車</option>
+        <option value="輕休旅/旅行車">輕休旅/旅行車</option>
+        <option value="休旅車">休旅車</option>
+        <option value="大型休旅車">大型休旅車</option>
+        <option value="商務車/皮卡">商務車/皮卡</option>
+        <option value="機車">機車</option>
+        <option value="電動機車">電動機車</option>
+      </select>
+    </div>
+  </div>
+  <div id="walkin-msg" style="font-size:13px;color:#A32D2D;margin-bottom:10px;min-height:18px"></div>
+  <button class="btn primary block" style="font-size:15px;padding:14px" onclick="confirmWalkIn()">建立並選擇此客戶</button>
+  <button class="btn block" style="margin-top:8px;color:var(--text3)" onclick="closeWalkInSheet()">取消</button>
+</div>
+
+<!-- 補填訂單資料 sheet -->
+<div id="order-edit-overlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.4);z-index:60" onclick="closeOrderEdit()"></div>
+<div id="order-edit-sheet" style="display:none;position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:560px;background:var(--bg);border-radius:20px 20px 0 0;z-index:61;padding:20px 18px 32px;max-height:85vh;overflow-y:auto">
+  <div style="width:36px;height:4px;background:var(--border2);border-radius:2px;margin:0 auto 16px"></div>
+  <div style="font-size:17px;font-weight:700;margin-bottom:4px">✏️ 補填訂單資料</div>
+  <div id="order-edit-info" style="font-size:13px;color:var(--text2);margin-bottom:16px"></div>
+  <div id="order-edit-missing" style="background:#FFF5F5;border:1.5px solid #E24B4A;border-radius:var(--radius);padding:10px 12px;margin-bottom:16px;font-size:13px;color:#A32D2D"></div>
+  <div class="row">
+    <div class="col"><label>客戶姓名</label><input id="oe-name" placeholder="王先生" /></div>
+    <div class="col"><label>電話</label><input id="oe-phone" type="tel" placeholder="0912345678" maxlength="10" oninput="this.value=this.value.replace(/[^0-9]/g,'')" /></div>
+  </div>
+  <div class="row">
+    <div class="col"><label>車牌</label><input id="oe-plate" placeholder="ABC1234" style="text-transform:uppercase" /></div>
+    <div class="col"><label>車型</label>
+      <select id="oe-cartype">
+        <option value="轎車">轎車</option>
+        <option value="輕休旅/旅行車">輕休旅/旅行車</option>
+        <option value="休旅車">休旅車</option>
+        <option value="大型休旅車">大型休旅車</option>
+        <option value="商務車/皮卡">商務車/皮卡</option>
+        <option value="機車">機車</option>
+        <option value="電動機車">電動機車</option>
+      </select>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col"><label>服務項目</label><input id="oe-service" placeholder="精緻洗車、鏡面大美容…" /></div>
+    <div class="col"><label>金額（元）</label><input id="oe-price" type="number" placeholder="0" min="0" /></div>
+  </div>
+  <div id="oe-msg" style="font-size:13px;color:#A32D2D;margin-bottom:10px;min-height:18px"></div>
+  <button class="btn primary block" style="font-size:15px;padding:14px" onclick="saveOrderEdit()">儲存補填資料</button>
+  <button class="btn block" style="margin-top:8px;color:var(--text3)" onclick="closeOrderEdit()">取消</button>
+</div>
+
 <div id="sched-detail-overlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.4);z-index:50" onclick="closeSchedDetail()"></div>
 <div id="sched-detail-sheet" style="display:none;position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:560px;background:var(--bg);border-radius:20px 20px 0 0;z-index:51;padding:20px 18px 32px">
   <div style="width:36px;height:4px;background:var(--border2);border-radius:2px;margin:0 auto 16px"></div>
@@ -917,7 +998,7 @@ let orderState = {phone:'', plate:'', service:'', payment:null};
 let orderStateVehicle = null;
 
 function switchTab(name) {
-  const names = ['today','schedule','search','order','orders','admin','dashboard','expense','settings'];
+  const names = ['today','schedule','search','order','checkout','orders','admin','dashboard','expense','settings'];
   document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active', names[i]===name));
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById('screen-'+name).classList.add('active');
@@ -927,6 +1008,7 @@ function switchTab(name) {
   if(name==='dashboard') renderDash();
   if(name==='schedule') renderSchedule();
   // wallet tab removed
+  if(name==='checkout'){ renderCheckout(); }
   if(name==='expense'){ renderInventory(); }
   if(name==='admin'){ renderAdminScreen(); }
   if(name==='dashboard'){ renderDash(); }
@@ -1098,6 +1180,23 @@ function openCustomerDetail(phone){
     ${(db.referrals||{})[c.phone]&&!(db.referrals||{})[c.phone].rewarded?`<div class="kv"><span class="k" style="color:#633806">首洗折抵</span><span class="v" style="color:#633806">未使用（消費時自動扣除）</span></div>`:''}
     <div class="kv"><span class="k">推薦人</span><span class="v">${refEntry?`<span class="ref-code">${referrerDisplay}</span> ${refEntry.rewarded?'✓ 已兌現':'（待首洗）'}` :'—'}</span></div>
     <div class="kv"><span class="k">成功推薦</span><span class="v">${refCount} 位</span></div>
+
+    <!-- 客戶備註（可收合） -->
+    <div style="margin-top:10px;border:1.5px solid var(--border2);border-radius:var(--radius-lg);overflow:hidden">
+      <div onclick="toggleCustomerNote('${c.phone}')" style="display:flex;align-items:center;justify-content:space-between;padding:11px 14px;cursor:pointer;background:var(--bg2);user-select:none">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:13px;font-weight:600;color:var(--text)">📝 客戶備註</span>
+          ${c.note?`<span style="font-size:11px;color:var(--green);font-weight:600">有記錄</span>`:`<span style="font-size:11px;color:var(--text3)">點擊展開</span>`}
+        </div>
+        <span id="customer-note-arrow-${c.phone}" style="color:var(--text3);font-size:14px">${c.note?'▲':'▼'}</span>
+      </div>
+      <div id="customer-note-body-${c.phone}" style="display:${c.note?'block':'none'};padding:12px 14px;background:var(--bg)">
+        <textarea id="customer-note-input-${c.phone}" placeholder="記錄客人喜好、注意事項、特殊要求…&#10;例：不喜歡太強烈的香味、左後輪輪框有舊傷請注意" style="width:100%;min-height:100px;font-size:14px;line-height:1.6;border:1.5px solid var(--border2);border-radius:var(--radius);padding:10px;font-family:inherit;resize:vertical">${c.note||''}</textarea>
+        <button onclick="saveCustomerNote('${c.phone}')" class="btn primary block" style="margin-top:8px;font-size:13px">儲存備註</button>
+        <div id="customer-note-msg-${c.phone}" style="font-size:12px;color:var(--green-text);margin-top:6px;min-height:16px"></div>
+      </div>
+    </div>
+
     <div class="divider"></div>
     <div style="display:flex;gap:8px;margin-bottom:8px">
       <button class="btn primary" style="flex:1" onclick="closeCustomerDetail();goOrder('${c.phone}')">立即開單</button>
@@ -1118,6 +1217,27 @@ function openCustomerDetail(phone){
 function closeCustomerDetail(){
   document.getElementById('customer-detail-overlay').style.display='none';
   document.getElementById('customer-detail-sheet').style.display='none';
+}
+
+function toggleCustomerNote(phone){
+  const body=document.getElementById(`customer-note-body-${phone}`);
+  const arrow=document.getElementById(`customer-note-arrow-${phone}`);
+  if(!body)return;
+  const isOpen=body.style.display!=='none';
+  body.style.display=isOpen?'none':'block';
+  if(arrow)arrow.textContent=isOpen?'▼':'▲';
+}
+
+function saveCustomerNote(phone){
+  const c=findCustomer(phone);if(!c)return;
+  const input=document.getElementById(`customer-note-input-${phone}`);
+  if(!input)return;
+  c.note=input.value.trim();
+  scheduleSave();
+  const msg=document.getElementById(`customer-note-msg-${phone}`);
+  if(msg){msg.textContent='✓ 已儲存';setTimeout(()=>{msg.textContent='';},2000);}
+  // 更新有記錄標示
+  openCustomerDetail(phone);
 }
 
 function showReferralInputDetail(phone){const a=document.getElementById(`ref-input-area-${phone}`);if(a)a.style.display=a.style.display==='none'?'block':'none';}
@@ -1375,9 +1495,16 @@ function autoFillPrice(){
     if(amtEl) amtEl.textContent=total>0?`$${total.toLocaleString()}`:(hasSpecial?'需手動填價':'—');
     if(timeEl) timeEl.textContent=`${totalMin} 分鐘`;
     if(detailEl){
-      let detail=selected.join('、');
-      if(specials.length) detail+=`（${specials.join('、')} 需手動填價）`;
-      detailEl.textContent=detail;
+      // 每項服務顯示單價
+      let carType='轎車';
+      if(orderState.plate){const cu=findCustomer(orderState.phone);const ca=cu?.cars.find(v=>v.plate===orderState.plate);if(ca)carType=ca.type;}
+      const lines=selected.map(svc=>{
+        if(SVC_SPECIAL[svc]) return`${svc} — 手動填價`;
+        const p=getSuggestedPrice(svc,carType);
+        return`${svc} — ${p?'$'+p.toLocaleString():'—'}`;
+      });
+      if(specials.length) lines.push(`（${specials.join('、')} 需手動填價）`);
+      detailEl.innerHTML=lines.map(l=>`<div>${l}</div>`).join('');
     }
   }
 
@@ -1401,17 +1528,30 @@ function fillOrderCustomer(){
   const infoEl=document.getElementById('order-customer-info');
   const carsEl=document.getElementById('order-cars');
   const listEl=document.getElementById('order-search-list');
+
+  // 已選客戶 → 任何輸入都先清除，讓用戶重新選
+  if(orderState.phone){
+    orderState.phone='';orderState.plate='';
+    infoEl.innerHTML='';
+    carsEl.innerHTML='<span style="color:var(--text3);font-size:13px">查詢客戶後顯示車輛</span>';
+    document.getElementById('upsell-hint').innerHTML='';
+    const banner=document.getElementById('price-banner');if(banner)banner.style.display='none';
+    const s=document.getElementById('order-search');
+    if(s){s.style.borderColor='#E24B4A';s.style.borderWidth='2px';}
+  }
   if(!q){
     infoEl.innerHTML='';carsEl.innerHTML='<span style="color:var(--text3);font-size:13px">查詢客戶後顯示車輛</span>';
     listEl.innerHTML='';orderState.phone='';orderState.plate='';
-    document.getElementById('upsell-hint').innerHTML='';return;
+    document.getElementById('upsell-hint').innerHTML='';
+    const s=document.getElementById('order-search');if(s){s.style.borderColor='#E24B4A';s.style.borderWidth='2px';}
+    return;
   }
   // 車牌搜尋（優先）
   const plateQ=q.toUpperCase().replace(/-/g,'');
   const byPlate=findCustomerByPlate(plateQ);
   if(byPlate){
+    // 車牌精確匹配直接選（車牌是唯一的，不會誤選）
     selectOrderCustomer(byPlate.phone);
-    // 自動選對應車牌
     const car=byPlate.cars.find(v=>v.plate.toUpperCase()===plateQ);
     if(car){
       setTimeout(()=>{
@@ -1422,7 +1562,7 @@ function fillOrderCustomer(){
     }
     listEl.innerHTML='';return;
   }
-  // 精確電話比對
+  // 精確電話比對也直接選
   const exact=findCustomer(q);
   if(exact){selectOrderCustomer(exact.phone);listEl.innerHTML='';return;}
   // 模糊搜尋姓名或電話
@@ -1432,7 +1572,7 @@ function fillOrderCustomer(){
     listEl.innerHTML='<div class="msg msg-error">找不到符合的客戶</div>';
     orderState.phone='';orderState.plate='';return;
   }
-  if(results.length===1){selectOrderCustomer(results[0].phone);listEl.innerHTML='';return;}
+  // 顯示清單讓用戶點選（不自動綁定，避免無法重選）
   infoEl.innerHTML='';carsEl.innerHTML='<span style="color:var(--text3);font-size:13px">查詢客戶後顯示車輛</span>';
   listEl.innerHTML=results.map(c=>{
     const tier=getMemberTier(c.phone);
@@ -1450,10 +1590,151 @@ function fillOrderCustomer(){
   }).join('');
 }
 
+let orderEditId=null;
+
+function openOrderEdit(id){
+  const o=db.orders.find(o=>o.id===id);if(!o)return;
+  const c=findCustomer(o.phone);
+  orderEditId=id;
+
+  const missing=[];
+  if(!o.plate) missing.push('車牌');
+  if(!o.service) missing.push('服務項目');
+  if(!o.price||o.price===0) missing.push('金額');
+  if(!c?.name) missing.push('客戶姓名');
+
+  document.getElementById('order-edit-info').textContent=`訂單 ${o.id} · ${o.created.slice(0,10)}`;
+  document.getElementById('order-edit-missing').innerHTML=`缺少：${missing.map(m=>`<strong>${m}</strong>`).join('、')}`;
+  document.getElementById('oe-name').value=c?.name||'';
+  document.getElementById('oe-phone').value=c?.phone===o.phone?o.phone:'';
+  document.getElementById('oe-plate').value=o.plate||'';
+  document.getElementById('oe-service').value=o.service||'';
+  document.getElementById('oe-price').value=o.price||'';
+  document.getElementById('oe-msg').textContent='';
+  // 若有既有車輛資料帶入車型
+  const existCar=c?.cars.find(v=>v.plate===o.plate);
+  if(existCar) document.getElementById('oe-cartype').value=existCar.type;
+
+  document.getElementById('order-edit-overlay').style.display='block';
+  document.getElementById('order-edit-sheet').style.display='block';
+}
+
+function closeOrderEdit(){
+  document.getElementById('order-edit-overlay').style.display='none';
+  document.getElementById('order-edit-sheet').style.display='none';
+  orderEditId=null;
+}
+
+function saveOrderEdit(){
+  const o=db.orders.find(o=>o.id===orderEditId);if(!o)return;
+  const name=document.getElementById('oe-name').value.trim();
+  const phone=document.getElementById('oe-phone').value.trim();
+  const plate=document.getElementById('oe-plate').value.trim().toUpperCase();
+  const cartype=document.getElementById('oe-cartype').value;
+  const service=document.getElementById('oe-service').value.trim();
+  const price=parseInt(document.getElementById('oe-price').value)||0;
+  const msg=document.getElementById('oe-msg');
+
+  // 更新客戶資料
+  let c=findCustomer(o.phone);
+  if(c){
+    if(name) c.name=name;
+    if(plate&&!c.cars.find(v=>v.plate===plate)){
+      c.cars.push({plate,type:cartype,cond:'A'});
+    }
+  } else if(name||phone){
+    const newPhone=phone||o.phone;
+    const memberId=generateMemberId();
+    db.customers.push({phone:newPhone,name:name||'未填姓名',cars:plate?[{plate,type:cartype,cond:'A'}]:[],memberId});
+    o.phone=newPhone;
+  }
+
+  // 更新訂單資料
+  if(plate) o.plate=plate;
+  if(service) o.service=service;
+  if(price>0) o.price=price;
+
+  // 同步更新排程
+  const sched=db.schedule.find(s=>s.id&&db.orders.find(ord=>ord.id===orderEditId&&s.plate===ord.plate));
+  if(sched){
+    if(plate) sched.plate=plate;
+    if(service) sched.service=service;
+  }
+
+  scheduleSave();
+  closeOrderEdit();
+  renderOrders();
+  renderToday();
+  msg.textContent='';
+}
+
+function openWalkInSheet(){
+  document.getElementById('walkin-overlay').style.display='block';
+  document.getElementById('walkin-sheet').style.display='block';
+  document.getElementById('walkin-name').value='';
+  document.getElementById('walkin-phone').value='';
+  document.getElementById('walkin-plate').value='';
+  document.getElementById('walkin-msg').textContent='';
+  setTimeout(()=>document.getElementById('walkin-name').focus(),100);
+}
+
+function closeWalkInSheet(){
+  document.getElementById('walkin-overlay').style.display='none';
+  document.getElementById('walkin-sheet').style.display='none';
+}
+
+function confirmWalkIn(){
+  const name=document.getElementById('walkin-name').value.trim();
+  const phone=document.getElementById('walkin-phone').value.trim();
+  const plate=document.getElementById('walkin-plate').value.trim().toUpperCase();
+  const cartype=document.getElementById('walkin-cartype').value;
+  const msg=document.getElementById('walkin-msg');
+
+  if(!name&&!phone){msg.textContent='請至少填寫姓名或電話';return;}
+  if(phone&&!isValidPhone(phone)){msg.textContent='電話格式不正確（09開頭，10碼）';return;}
+
+  // 若電話已存在直接選
+  if(phone){
+    const exist=findCustomer(phone);
+    if(exist){
+      closeWalkInSheet();
+      selectOrderCustomer(exist.phone);
+      return;
+    }
+  }
+
+  // 建立臨時客戶
+  const tempPhone=phone||(Date.now().toString().slice(-10)); // 無電話用時間戳代替
+  const memberId=generateMemberId();
+  const cars=plate?[{plate,type:cartype,cond:'A'}]:[];
+  db.customers.push({phone:tempPhone,name:name||'預約客戶',cars,memberId,isTemp:!phone});
+  scheduleSave();
+  closeWalkInSheet();
+  selectOrderCustomer(tempPhone);
+  // 自動選車
+  if(cars.length===1){
+    setTimeout(()=>{
+      const chip=document.querySelector('#order-cars .chip');
+      if(chip){chip.classList.add('selected');selectCar(cars[0].plate,chip);}
+    },100);
+  }
+}
+
+function resetOrderCustomer(){
+  orderState.phone='';orderState.plate='';
+  const s=document.getElementById('order-search');
+  if(s){s.value='';s.style.borderColor='#E24B4A';s.style.borderWidth='2px';s.focus();}
+  document.getElementById('order-customer-info').innerHTML='';
+  document.getElementById('order-cars').innerHTML='<span style="color:var(--text3);font-size:13px">查詢客戶後顯示車輛</span>';
+  document.getElementById('order-search-list').innerHTML='';
+  document.getElementById('upsell-hint').innerHTML='';
+  const banner=document.getElementById('price-banner');if(banner)banner.style.display='none';
+}
+
 function selectOrderCustomer(phone){
   const c=findCustomer(phone);if(!c)return;
   const searchEl=document.getElementById('order-search');
-  if(searchEl)searchEl.value=c.name||c.phone;
+  if(searchEl){searchEl.value=c.name||c.phone;searchEl.style.borderColor='#1D9E75';searchEl.style.borderWidth='2px';}
   document.getElementById('order-search-list').innerHTML='';
   orderState.phone=phone;
   const tier=getMemberTier(phone);
@@ -1467,7 +1748,7 @@ function selectOrderCustomer(phone){
     setTimeout(()=>alert(`⚠️ 注意：此客戶曾有 ${noshowCount} 次爽約紀錄\n\n請確認是否繼續開單`),100);
   }
   const infoEl=document.getElementById('order-customer-info');
-  infoEl.innerHTML=`<div style="padding:10px 12px;border-radius:10px;background:${ts.bg};border:1.5px solid ${ts.border}">
+  infoEl.innerHTML=`<div style="padding:10px 12px;border-radius:10px;background:${ts.bg};border:1.5px solid ${ts.border};margin-bottom:8px">
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
       <span style="font-size:14px;font-weight:600;color:${ts.text}">${c.name||'（未填姓名）'}</span>
       <span style="font-size:11px;padding:1px 7px;border-radius:99px;background:${ts.badge};color:${ts.badgeText};font-weight:700">${getMemberTierLabel(tier, c.memberId)}</span>
@@ -1475,6 +1756,7 @@ function selectOrderCustomer(phone){
     <div style="font-size:12px;color:${ts.text};opacity:0.7">${c.phone} · ${c.cars.length} 台車</div>
     ${bonus>0?`<div style="font-size:12px;color:#0C447C;margin-top:3px">保養金 $${bonus.toLocaleString()} 可用</div>`:''}
     ${hasReferral?`<div style="font-size:12px;color:#633806;margin-top:3px">⭐ 首洗推薦折抵待使用</div>`:''}
+    ${c.note?`<div style="font-size:12px;color:#633806;margin-top:5px;padding:6px 8px;background:#FAEEDA;border-radius:6px">📝 ${c.note.length>50?c.note.slice(0,50)+'…':c.note}</div>`:''}
   </div>`;
   document.getElementById('order-cars').innerHTML=c.cars.map(car=>`<span class="chip" onclick="selectCar('${car.plate}',this)">${car.plate} <span class="badge badge-${car.cond.toLowerCase()}" style="margin-left:2px;font-size:10px">${car.type} ${car.cond}</span></span>`).join('');
   // 只有一台車 → 自動選擇
@@ -1555,9 +1837,7 @@ function quickSelectService(s){ document.querySelectorAll('#service-chips .chip'
 
 function createOrder(){
   const msgEl=document.getElementById('order-msg');
-  if(!orderState.phone){msgEl.innerHTML='<div class="msg msg-error">請先輸入電話查詢客戶</div>';return;}
-  if(!orderState.plate){msgEl.innerHTML='<div class="msg msg-error">請選擇車輛</div>';return;}
-  if(!orderState.service){msgEl.innerHTML='<div class="msg msg-error">請至少選一項服務</div>';return;}
+  if(!orderState.phone){msgEl.innerHTML='<div class="msg msg-error">請先查詢並選擇客戶</div>';return;}
   const price=parseInt(document.getElementById('order-price').value)||0;
   const time=parseInt(document.getElementById('order-time').value)||0;
   const note=document.getElementById('order-note').value.trim();
@@ -1574,11 +1854,13 @@ function createOrder(){
   const endTime=document.getElementById('order-end-time')?.value||'';
   db.orders.push({id,phone:orderState.phone,plate:orderState.plate,service:orderState.service,price,time,note,payment,appt,staff,assistants,endDate,status:'pending',created,});
   // 有預約時間 → 自動建立排程（支援跨日）
-  if(apptDate){
-    const schedStart=apptTime||'09:00';
+  // 有預約日期 → 按預約建排程；沒有 → 用建立時間插入今日
+  const schedDate = apptDate || todayStr();
+  const schedStart = apptDate ? (apptTime||'10:00') : (created.slice(11,16)||'10:00');
+  {
     const totalPeople=1+assistants;
-    let remMin=time;
-    let curDate=new Date(apptDate+'T12:00:00');
+    let remMin=time||60;
+    let curDate=new Date(schedDate+'T12:00:00');
     let curStart=schedStart;
     let sid=0;
     while(remMin>0){
@@ -1588,12 +1870,12 @@ function createOrder(){
       const todayMin=Math.min(remMin,Math.max(avail,0));
       if(todayMin>0){
         const schedId='S'+(Date.now()+sid).toString().slice(-6);
-        db.schedule.push({id:schedId,phone:orderState.phone,plate:orderState.plate,service:orderState.service,date:dateStr,start:curStart,dur:todayMin,staff,assistants});
+        db.schedule.push({id:schedId,phone:orderState.phone,plate:orderState.plate||'未填車牌',service:orderState.service||'待補填',date:dateStr,start:curStart,dur:todayMin,staff,assistants});
         sid++;
       }
       remMin-=avail;
       curDate.setDate(curDate.getDate()+1);
-      curStart='09:00';
+      curStart='10:00';
     }
   }
   msgEl.innerHTML=`<div class="msg msg-success">訂單 ${id} 已建立 — ${orderState.service} / ${orderState.plate} / $${price.toLocaleString()}${appt?' / 預約'+appt:''}${staff?' / '+staff:''}</div>`;
@@ -2133,18 +2415,27 @@ function renderOrders(){
     const payBadge=o.status==='done'?`<span class="badge" style="background:#F1EFE8;color:#5F5E5A">現金</span>`:`<span class="badge" style="background:#FAEEDA;color:#633806">待付款</span>`;
     const staffSel=`<select onchange="assignStaff('${o.id}',this.value)" style="border:0.5px solid var(--border2);border-radius:var(--radius);font-size:12px;padding:3px 6px;background:var(--bg);color:var(--text);font-family:inherit;cursor:pointer;max-width:130px"><option value="" ${!o.staff?'selected':''}>— 未指定 —</option>${staffOpts.map(s=>`<option value="${s}" ${o.staff===s?'selected':''}>${s}</option>`).join('')}</select>`;
 
+    // 資料完整性檢查
+    const missingFields=[];
+    if(!o.plate) missingFields.push('車牌');
+    if(!o.service) missingFields.push('服務');
+    if(!o.price||o.price===0) missingFields.push('金額');
+    if(!c?.name) missingFields.push('姓名');
+    const isIncomplete=missingFields.length>0&&(o.status==='pending'||o.status==='doing');
+
     // 摺疊標頭（永遠顯示）
     const header=`<div onclick="toggleOrder('${o.id}')" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:2px 0;user-select:none">
       <div style="flex:1;min-width:0">
         <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
-          <span style="font-size:14px;font-weight:600">${o.plate}</span>
+          <span style="font-size:14px;font-weight:600">${o.plate||'未填車牌'}</span>
           ${isBlack?`<span style="font-size:10px;padding:1px 5px;border-radius:99px;background:#1A1A1A;color:#FFD700;font-weight:700">黑卡</span>`:''}
           <span class="badge badge-${o.status}" style="font-size:11px">${STATUS_LABEL[o.status]||o.status}</span>
           ${payBadge}
+          ${isIncomplete?`<span onclick="event.stopPropagation();openOrderEdit('${o.id}');" style="font-size:10px;padding:2px 8px;border-radius:99px;background:#FFF5F5;color:#A32D2D;border:1px solid #E24B4A;font-weight:600;cursor:pointer;white-space:nowrap">⚠ 資料未填齊 →</span>`:''}
         </div>
-        <div style="font-size:12px;color:var(--text2);margin-top:2px">${c?(c.name||'未填姓名'):o.phone} · ${o.service.split('、')[0]}${o.service.includes('、')?'...':''}
+        <div style="font-size:12px;color:var(--text2);margin-top:2px">${c?(c.name||'⚠ 未填姓名'):o.phone} · ${o.service?o.service.split('、')[0]:'⚠ 未填服務'}${o.service?.includes('、')?'...':''}
         </div>
-        <div style="font-size:11px;color:var(--text3);margin-top:1px">${o.id} · ${o.created.slice(0,10)} · $${o.price.toLocaleString()}</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:1px">${o.id} · ${o.created.slice(0,10)} · ${o.price?'$'+o.price.toLocaleString():'⚠ 未填金額'}</div>
       </div>
       <div style="font-size:18px;color:var(--text3);margin-left:8px;flex-shrink:0">${isExpanded?'▲':'▼'}</div>
     </div>`;
@@ -2814,7 +3105,67 @@ function getTodayOnStaff(){
   return staffNames.filter(n=>getShiftStatus(today,n)==='on');
 }
 
-/* ═══ 中控台 ═══ */
+/* ═══ 結單 ═══ */
+function renderCheckout(){
+  const el=document.getElementById('checkout-list');
+  if(!el)return;
+  const active=db.orders.filter(o=>o.status==='pending'||o.status==='doing').sort((a,b)=>a.created>b.created?1:-1);
+  if(!active.length){
+    el.innerHTML='<div class="empty">目前沒有待結單的訂單</div>';
+    return;
+  }
+  el.innerHTML=active.map(o=>{
+    const c=findCustomer(o.phone);
+    const tier=c?getMemberTier(c.phone):'normal';
+    const isBlack=tier==='black';
+    const statusColor={pending:'#EF9F27',doing:'#185FA5'}[o.status]||'#ccc';
+    const statusLabel={pending:'待處理',doing:'進行中'}[o.status]||o.status;
+
+    // 檢查缺少的資料
+    const missing=[];
+    if(!o.plate) missing.push('車牌');
+    if(!o.service) missing.push('服務項目');
+    if(!o.price||o.price===0) missing.push('金額');
+    if(!c?.name) missing.push('客戶姓名');
+    const canCheckout=missing.length===0;
+
+    return`<div style="background:var(--bg);border-radius:var(--radius-lg);border:1.5px solid ${canCheckout?'var(--border)':'#E24B4A'};margin-bottom:10px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.06)">
+      ${isBlack?`<div style="background:#1A1A1A;color:#FFD700;font-size:11px;font-weight:700;padding:4px 14px;letter-spacing:0.05em">⬛ 黑卡 ${c?.memberId||''}</div>`:''}
+      <div style="padding:14px;border-left:4px solid ${statusColor}">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-size:18px;font-weight:700">${o.plate||'⚠ 未填車牌'}</span>
+            <span style="font-size:11px;padding:2px 8px;border-radius:99px;background:${statusColor}20;color:${statusColor};font-weight:700">${statusLabel}</span>
+          </div>
+          <span style="font-size:16px;font-weight:700;color:${o.price?'var(--green)':'#A32D2D'}">${o.price?'$'+o.price.toLocaleString():'⚠ 未填金額'}</span>
+        </div>
+        <div style="font-size:13px;color:var(--text2);margin-bottom:4px">${c?(c.name||'⚠ 未填姓名'):o.phone}</div>
+        <div style="font-size:13px;color:${o.service?'var(--text2)':'#A32D2D'};margin-bottom:10px">${o.service||'⚠ 未填服務項目'}</div>
+
+        ${!canCheckout?`
+          <div style="background:#FFF5F5;border:1.5px solid #E24B4A;border-radius:var(--radius);padding:10px 12px;margin-bottom:10px">
+            <div style="font-size:12px;font-weight:700;color:#A32D2D;margin-bottom:6px">⚠ 結單前請補齊以下資料：</div>
+            ${missing.map(m=>`<div style="font-size:12px;color:#A32D2D;margin-bottom:2px">・${m}</div>`).join('')}
+          </div>
+          <button onclick="switchTab('orders')" style="width:100%;padding:12px;border-radius:var(--radius);border:1.5px solid var(--border2);background:none;color:var(--text);font-size:14px;cursor:pointer;font-family:inherit;margin-bottom:8px">
+            ✏️ 前往訂單補填資料
+          </button>
+        `:''}
+
+        <button onclick="${canCheckout?`todaySetStatus('${o.id}','done')`:`checkoutBlocked('${missing.join('、')}')`}"
+          class="btn ${canCheckout?'primary':'block'}" style="width:100%;font-size:15px;font-weight:700;padding:14px;${!canCheckout?'background:#F5F5F5;color:#999;border-color:#ddd;cursor:not-allowed':''}">
+          ${canCheckout?'✅ 完成結單':'❌ 資料不齊，無法結單'}
+        </button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function checkoutBlocked(missing){
+  alert(`請先補齊以下資料才能結單：\n\n・${missing.split('、').join('\n・')}\n\n請至「訂單紀錄」展開該筆訂單補填。`);
+}
+
+
 let adminUnlocked = false;
 
 function renderAdminScreen(){
