@@ -213,9 +213,8 @@ textarea{resize:vertical;min-height:72px}
 <body>
 <div class="app-shell">
   <div class="topbar">
-    <div class="tab active" onclick="switchTab('today')">今日代辦</div>
-    <div class="tab" onclick="switchTab('schedule')">工作日程</div>
-    <div class="tab" onclick="switchTab('search')">客戶資訊</div>
+    <div class="tab active" onclick="switchTab('today')">工作時程</div>
+    <div class="tab" onclick="switchTab('search')">會員管理</div>
     <div class="tab" onclick="switchTab('order')">開單</div>
     <div class="tab" onclick="switchTab('checkout')">結單</div>
     <div class="tab" onclick="switchTab('orders')">訂單紀錄</div>
@@ -224,25 +223,33 @@ textarea{resize:vertical;min-height:72px}
 
   <!-- 今日工作板 -->
   <div id="screen-today" class="screen active">
+    <!-- 視圖切換 -->
+    <div style="display:flex;border-bottom:1.5px solid var(--border);background:var(--bg);position:sticky;top:52px;z-index:4">
+      <button id="view-btn-today" onclick="switchTodayView('today')" style="flex:1;padding:12px;border:none;background:none;font-size:14px;font-weight:600;color:var(--green);border-bottom:2px solid var(--green);cursor:pointer;font-family:inherit">今日</button>
+      <button id="view-btn-cal" onclick="switchTodayView('cal')" style="flex:1;padding:12px;border:none;background:none;font-size:14px;font-weight:500;color:var(--text3);border-bottom:2px solid transparent;cursor:pointer;font-family:inherit">月曆</button>
+    </div>
     <div id="today-content"></div>
+    <div id="today-cal-content" style="display:none;padding:0"></div>
   </div>
 
   <!-- 客戶資料 -->
   <div id="screen-search" class="screen" style="padding:0">
     <!-- 搜尋列 -->
     <div style="padding:12px 18px 10px;border-bottom:1px solid var(--border);position:sticky;top:52px;background:var(--bg);z-index:5">
-      <input id="search-q" placeholder="搜尋姓名、電話或車牌" oninput="onSearchQ()" style="width:100%" />
+      <input id="search-q" placeholder="搜尋姓名、電話、車牌或會員編號" oninput="onSearchQ()" style="width:100%" />
     </div>
     <!-- 顯示客戶按鈕 -->
-    <div style="padding:14px 18px;border-bottom:1px solid var(--border)">
-      <button class="btn block" onclick="toggleCustomerList()" id="customer-list-toggle">☰ 顯示所有客戶</button>
+    <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;gap:10px">
+      <button class="btn block" onclick="toggleCustomerList()" id="customer-list-toggle"
+        style="background:var(--bg2);border-color:var(--border2);color:var(--text2);font-weight:600">☰ 顯示所有會員</button>
+      <button class="btn block" onclick="toggleNewCustomer()" id="new-customer-toggle-top"
+        style="background:var(--green-bg);border-color:var(--green);color:var(--green-text);font-weight:600">＋ 新增客戶</button>
     </div>
     <!-- 會員清單（預設隱藏） -->
     <div id="customer-list" style="display:none"></div>
-    <!-- 新增客戶（摺疊） -->
-    <div style="padding:14px 18px;border-top:1px solid var(--border)">
-      <button class="btn block" onclick="toggleNewCustomer()" id="new-customer-toggle">＋ 新增客戶</button>
-      <div id="new-customer-form" style="display:none;margin-top:14px">
+    <!-- 新增客戶表單（摺疊） -->
+    <div style="border-top:1px solid var(--border)">
+      <div id="new-customer-form" style="display:none;padding:14px 18px">
         <div class="row">
           <div class="col"><label>姓名 *（至少填姓氏）</label><input id="new-name" placeholder="王" maxlength="10" /></div>
           <div class="col"><label>電話 *</label><input id="new-phone" type="tel" placeholder="0912345678" maxlength="10" oninput="validatePhone(this)" /></div>
@@ -342,9 +349,9 @@ textarea{resize:vertical;min-height:72px}
     <div class="row">
       <div class="col"><label>開始日期</label>
         <div style="display:flex;gap:6px;align-items:center">
-          <button onclick="document.getElementById('order-appt-date').showPicker?document.getElementById('order-appt-date').showPicker():document.getElementById('order-appt-date').click()" style="padding:0 12px;height:52px;border-radius:var(--radius);border:1.5px solid var(--border2);background:var(--bg);color:var(--text);font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;font-family:inherit;flex-shrink:0">📅 預約</button>
-          <input id="order-appt-date" type="date" oninput="calcWorkDays()" style="flex:1" />
-          <button onclick="document.getElementById('order-appt-date').value=todayStr();calcWorkDays();" style="padding:0 12px;height:52px;border-radius:var(--radius);border:1.5px solid var(--green);background:var(--green-bg);color:var(--green-text);font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;font-family:inherit;flex-shrink:0">今日</button>
+          <button onclick="document.getElementById('order-appt-date').showPicker?document.getElementById('order-appt-date').showPicker():document.getElementById('order-appt-date').click()" style="padding:0 10px;height:52px;border-radius:var(--radius);border:1.5px solid var(--border2);background:var(--bg);color:var(--text);font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;font-family:inherit;flex-shrink:0">📅</button>
+          <input id="order-appt-date" type="date" oninput="calcWorkDays()" style="flex:1;min-width:0" />
+          <button onclick="document.getElementById('order-appt-date').value=todayStr();calcWorkDays();" style="padding:0 10px;height:52px;border-radius:var(--radius);border:1.5px solid var(--green);background:var(--green-bg);color:var(--green-text);font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;font-family:inherit;flex-shrink:0">今日</button>
         </div>
       </div>
       <div class="col"><label>開始時間</label>
@@ -408,66 +415,8 @@ textarea{resize:vertical;min-height:72px}
   </div>
 
   <!-- 車輛紀錄 -->
-  <div id="screen-history" class="screen" style="padding:0">
-    <div id="hist-main-view">
-      <div style="padding:12px 16px 8px;border-bottom:1px solid var(--border)">
-        <input id="hist-search" placeholder="搜尋車牌、姓名或電話" oninput="renderHistoryList()" style="width:100%" />
-      </div>
-      <div id="hist-list"></div>
-    </div>
-    <div id="hist-detail-view" style="display:none">
-      <div style="padding:10px 16px;border-bottom:1px solid var(--border);background:var(--bg);position:sticky;top:52px;z-index:5">
-        <button class="btn" onclick="closeHistDetail()" style="font-size:13px;padding:6px 14px">← 返回</button>
-      </div>
-      <div id="hist-result" style="padding:0 16px 16px"></div>
-    </div>
-  </div>
 
     <!-- 排程 -->
-  <div id="screen-schedule" class="screen" style="padding:0">
-    <div id="sched-month-view">
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px 8px">
-        <button class="btn" onclick="monthNav(-1)">‹</button>
-        <div id="month-label" style="font-size:15px;font-weight:500"></div>
-        <button class="btn" onclick="monthNav(1)">›</button>
-      </div>
-      <div style="display:grid;grid-template-columns:repeat(7,1fr);border-bottom:1px solid var(--border)">
-        <div style="text-align:center;font-size:11px;color:var(--text2);padding:6px 0;font-weight:500">日</div>
-        <div style="text-align:center;font-size:11px;color:var(--text2);padding:6px 0;font-weight:500">一</div>
-        <div style="text-align:center;font-size:11px;color:var(--text2);padding:6px 0;font-weight:500">二</div>
-        <div style="text-align:center;font-size:11px;color:var(--text2);padding:6px 0;font-weight:500">三</div>
-        <div style="text-align:center;font-size:11px;color:var(--text2);padding:6px 0;font-weight:500">四</div>
-        <div style="text-align:center;font-size:11px;color:var(--text2);padding:6px 0;font-weight:500">五</div>
-        <div style="text-align:center;font-size:11px;color:var(--text2);padding:6px 0;font-weight:500">六</div>
-      </div>
-      <div id="month-grid"></div>
-    </div>
-    <div id="sched-day-view" style="display:none">
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px 8px;border-bottom:1px solid var(--border)">
-        <button class="btn" onclick="backToMonth()">← 月曆</button>
-        <div id="day-label" style="font-size:14px;font-weight:500"></div>
-        <div style="display:flex;gap:6px">
-          <button class="btn" onclick="dayNav(-1)">‹</button>
-          <button class="btn" onclick="dayNav(1)">›</button>
-        </div>
-      </div>
-      <div id="day-legend" style="display:flex;gap:8px;padding:8px 16px;flex-wrap:wrap;border-bottom:1px solid var(--border)"></div>
-      <div id="day-timeline" style="padding:0 16px 16px;overflow-y:auto"></div>
-      <!-- 拖曳確認列（拖曳後才顯示） -->
-      <div id="drag-confirm-bar" style="display:none;position:sticky;bottom:0;background:#185FA5;padding:12px 18px;display:none;gap:12px;align-items:center;justify-content:space-between">
-        <span style="font-size:13px;color:#fff;font-weight:500">📌 已移動排程，確認儲存？</span>
-        <div style="display:flex;gap:8px">
-          <button onclick="cancelDragChange()" style="padding:8px 16px;border-radius:var(--radius);border:1.5px solid rgba(255,255,255,0.5);background:none;color:#fff;font-size:13px;cursor:pointer;font-family:inherit">取消</button>
-          <button onclick="confirmDragChange()" style="padding:8px 16px;border-radius:var(--radius);background:#fff;color:#185FA5;font-size:13px;font-weight:600;cursor:pointer;border:none;font-family:inherit">確認儲存</button>
-        </div>
-      </div>
-      <div style="padding:12px 16px;border-top:1px solid var(--border)">
-        <div style="font-size:13px;color:var(--text2);text-align:center;padding:4px 0">
-          排程由<button onclick="switchTab('order')" style="background:none;border:none;color:var(--green);font-weight:700;font-size:inherit;cursor:pointer;font-family:inherit;padding:0;text-decoration:underline">開單頁面</button>填寫預約時間自動建立 · 點區塊可修改或刪除
-        </div>
-      </div>
-    </div>
-  </div>
 
   <!-- 中控台 -->
   <div id="screen-admin" class="screen" style="padding:0">
@@ -523,10 +472,80 @@ textarea{resize:vertical;min-height:72px}
           <div style="width:48px;height:48px;border-radius:12px;background:#F1EFE8;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0">⚙️</div>
           <div>
             <div style="font-size:17px;font-weight:700;color:var(--text)">系統設定</div>
-            <div style="font-size:13px;color:var(--text3);margin-top:2px">員工、價目表、班表、資料管理</div>
+            <div style="font-size:13px;color:var(--text3);margin-top:2px">員工、價目表、資料管理</div>
           </div>
           <div style="margin-left:auto;font-size:20px;color:var(--text3)">›</div>
         </button>
+
+        <button onclick="showAdminSection('shift')"
+          style="width:100%;padding:22px 20px;border-radius:var(--radius-lg);border:1.5px solid var(--border);background:var(--bg);cursor:pointer;font-family:inherit;text-align:left;display:flex;align-items:center;gap:16px;transition:all 0.15s"
+          onmouseover="this.style.background='var(--bg2)'" onmouseout="this.style.background='var(--bg)'">
+          <div style="width:48px;height:48px;border-radius:12px;background:#E6F1FB;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0">📅</div>
+          <div>
+            <div style="font-size:17px;font-weight:700;color:var(--text)">排班管理</div>
+            <div style="font-size:13px;color:var(--text3);margin-top:2px">員工班表、週一公休、出勤設定</div>
+          </div>
+          <div style="margin-left:auto;font-size:20px;color:var(--text3)">›</div>
+        </button>
+      </div>
+
+      <!-- 系統規格說明 -->
+      <div style="margin:0 20px 24px;border:1.5px solid var(--border);border-radius:var(--radius-lg);overflow:hidden">
+        <div style="background:var(--bg2);padding:12px 16px;font-size:11px;font-weight:700;color:var(--text3);letter-spacing:0.06em;text-transform:uppercase">系統規格說明</div>
+
+        <div style="padding:14px 16px;border-bottom:1px solid var(--border)">
+          <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:6px">🏆 會員等級</div>
+          <div style="font-size:12px;color:var(--text2);line-height:1.9">
+            <div><span style="font-weight:600">一般會員</span> — 建檔即可，自動產生會員編號（A0001 起）</div>
+            <div><span style="font-weight:600">⬛ 黑卡</span> — 曾做鍍膜類，或年度消費 ≥ $25,000</div>
+          </div>
+        </div>
+
+        <div style="padding:14px 16px;border-bottom:1px solid var(--border)">
+          <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:6px">⭐ 推薦制度</div>
+          <div style="font-size:12px;color:var(--text2);line-height:1.9">
+            <div>新客首洗折抵：洗車 <b>-$100</b> / 美容 <b>-$300</b> / 鍍膜 <b>-$1,000</b></div>
+            <div>推薦人完成後獲 <b>$200 保養金</b>，每台車牌終身限一次</div>
+          </div>
+        </div>
+
+        <div style="padding:14px 16px;border-bottom:1px solid var(--border)">
+          <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:6px">🔁 回訪燈號</div>
+          <div style="font-size:12px;color:var(--text2);line-height:1.9">
+            <div>✅ 綠 30天內 · ⚠️ 黃 30–59天 · 🔴 紅 60–89天 · ⚫ 黑 90天以上</div>
+          </div>
+        </div>
+
+        <div style="padding:14px 16px;border-bottom:1px solid var(--border)">
+          <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:6px">🗑️ 刪除訂單</div>
+          <div style="font-size:12px;color:var(--text2);line-height:1.9">
+            <div>員工「申請刪除」→ 訂單變灰 → 店長輸入密碼確認</div>
+            <div style="color:var(--text3)">永久刪除，無法復原</div>
+          </div>
+        </div>
+
+        <div style="padding:14px 16px;border-bottom:1px solid var(--border)">
+          <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:6px">📋 結單必填</div>
+          <div style="font-size:12px;color:var(--text2);line-height:1.9">
+            <div>姓名、車牌、服務項目、金額 — 缺一不可</div>
+          </div>
+        </div>
+
+        <div style="padding:14px 16px;border-bottom:1px solid var(--border)">
+          <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:6px">📅 排程規則</div>
+          <div style="font-size:12px;color:var(--text2);line-height:1.9">
+            <div>填預約時間 → 插入對應日期，未填 → 插入今日建立時間</div>
+            <div>工時超當日 → 自動延伸隔日</div>
+          </div>
+        </div>
+
+        <div style="padding:14px 16px">
+          <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:6px">💾 資料儲存</div>
+          <div style="font-size:12px;color:var(--text2);line-height:1.9">
+            <div>存於本機瀏覽器，換設備需重新匯入 JSON</div>
+            <div style="color:#A32D2D;font-weight:600">⚠ 清除瀏覽器資料會導致資料遺失</div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -618,24 +637,6 @@ textarea{resize:vertical;min-height:72px}
           <div style="padding:12px 14px;border-top:1px solid var(--border)">
             <button class="btn primary block" onclick="savePriceTable()">儲存價目表</button>
             <div id="price-table-msg" style="margin-top:8px"></div>
-          </div>
-        </div>
-
-        <!-- 班表管理 -->
-        <div class="section-title">班表管理</div>
-        <div class="card" style="padding:0;overflow:hidden">
-          <div style="padding:10px 14px;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
-            <div style="font-size:12px;color:var(--text2)">週一固定公休 · 點格子切換出勤</div>
-            <div style="display:flex;gap:6px;align-items:center">
-              <button onclick="shiftPrevWeek()" style="padding:4px 10px;border:1px solid var(--border2);border-radius:var(--radius);background:none;cursor:pointer;font-size:13px">‹</button>
-              <span id="shift-week-label" style="font-size:13px;font-weight:500"></span>
-              <button onclick="shiftNextWeek()" style="padding:4px 10px;border:1px solid var(--border2);border-radius:var(--radius);background:none;cursor:pointer;font-size:13px">›</button>
-            </div>
-          </div>
-          <div id="shift-table" style="overflow-x:auto;-webkit-overflow-scrolling:touch;padding:0"></div>
-          <div style="padding:10px 14px;border-top:1px solid var(--border)">
-            <button class="btn primary block" onclick="saveShift()">儲存班表</button>
-            <div id="shift-msg" style="margin-top:6px"></div>
           </div>
         </div>
 
@@ -960,7 +961,7 @@ let orderState = {phone:'', plate:'', service:'', payment:null};
 let orderStateVehicle = null;
 
 function switchTab(name) {
-  const names = ['today','schedule','search','order','checkout','orders','admin','dashboard','expense','settings'];
+  const names = ['today','search','order','checkout','orders','admin','dashboard','expense','settings'];
   document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active', names[i]===name));
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById('screen-'+name).classList.add('active');
@@ -1079,7 +1080,7 @@ function findCustomerByPlate(plate){ return db.customers.find(c=>c.cars.some(v=>
 function renderCustomerList(){
   const q=(document.getElementById('search-q')?.value||'').trim().toLowerCase();
   let list=[...db.customers];
-  if(q){list=list.filter(c=>c.name.toLowerCase().includes(q)||c.phone.includes(q)||c.cars.some(v=>v.plate.toLowerCase().includes(q)));}
+  if(q){list=list.filter(c=>c.name.toLowerCase().includes(q)||c.phone.includes(q)||c.cars.some(v=>v.plate.toLowerCase().includes(q))||(c.memberId&&c.memberId.toLowerCase().includes(q)));}
   list.sort((a,b)=>{const sa=strokeCount(a.name),sb=strokeCount(b.name);if(sa!==sb)return sa-sb;return(a.name||'').localeCompare(b.name||'','zh-TW');});
   const el=document.getElementById('customer-list');
   if(!list.length){el.innerHTML='<div class="empty">找不到符合的客戶</div>';return;}
@@ -1233,9 +1234,22 @@ function onSearchQ(){
 
 function toggleNewCustomer(){
   const form=document.getElementById('new-customer-form');
-  const btn=document.getElementById('new-customer-toggle');
-  if(form.style.display==='none'){form.style.display='block';btn.textContent='✕ 收起';}
-  else{form.style.display='none';btn.textContent='＋ 新增客戶';}
+  const topBtn=document.getElementById('new-customer-toggle-top');
+  const isOpen=form.style.display!=='none';
+  form.style.display=isOpen?'none':'block';
+  if(topBtn){
+    if(!isOpen){
+      topBtn.textContent='✕ 收起新增';
+      topBtn.style.background='#FCEBEB';
+      topBtn.style.borderColor='#E24B4A';
+      topBtn.style.color='#791F1F';
+    } else {
+      topBtn.textContent='＋ 新增客戶';
+      topBtn.style.background='var(--green-bg)';
+      topBtn.style.borderColor='var(--green)';
+      topBtn.style.color='var(--green-text)';
+    }
+  }
 }
 
 // liveSearch, selectSearchResult, doSearch 已移除（改由 renderCustomerList/onSearchQ 處理）
@@ -1291,15 +1305,6 @@ function applyReferral(newPhone){
   renderCustomerList();
 }
 
-function checkReferralReward(phone, service){
-  const refs=db.referrals||{}; const ref=refs[phone];
-  if(!ref||ref.rewarded) return 0; // 已兌現或無推薦
-  // 計算折抵金額
-  const tier=getSvcTier(service||'');
-  const discount=REFERRAL_DISCOUNT[tier]||0;
-  // 標記新客推薦已處理（不預先入帳，完成時才折抵）
-  return discount; // 回傳折抵金額供完成訂單使用
-}
 
 function redeemReferral(phone, service){
   const refs=db.referrals||{}; const ref=refs[phone];
@@ -1315,33 +1320,6 @@ function redeemReferral(phone, service){
   return discount;
 }
 
-function goWallet(phone){ /* wallet removed */ }
-function goOrder(phone){ switchTab('order'); const c=findCustomer(phone); const el=document.getElementById('order-search'); if(el&&c)el.value=c.name||c.phone; selectOrderCustomer(phone); }
-function goHistory(phone){ switchTab('search'); setTimeout(()=>openCustomerDetail(phone),100); }
-
-function toggleCustomerHistory(phone){
-  const el=document.getElementById('vehicle-history-detail');
-  if(!el)return;
-  if(el.dataset.phone===phone&&el.innerHTML){el.innerHTML='';el.dataset.phone='';return;}
-  el.dataset.phone=phone;
-  const c=findCustomer(phone);if(!c)return;
-  const orders=[...db.orders.filter(o=>o.phone===phone)].reverse();
-  if(!orders.length){el.innerHTML='<div class="empty" style="padding:12px 0">尚無服務紀錄</div>';return;}
-  el.innerHTML=`<div style="margin-top:8px">
-    <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:8px">服務紀錄（共 ${orders.length} 筆）</div>
-    ${orders.map(o=>`<div class="hist-item">
-      <div class="hist-dot" style="background:${{done:'#1D9E75',doing:'#185FA5',pending:'#EF9F27',noshow:'#A32D2D'}[o.status]||'#ccc'}"></div>
-      <div class="hist-info">
-        <div style="font-size:13px;font-weight:500">${o.plate} · ${o.service.split('、')[0]}${o.service.includes('、')?'…':''}</div>
-        <div class="hist-date">${o.created.slice(0,10)}</div>
-      </div>
-      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex-shrink:0">
-        <span class="badge badge-${o.status}" style="font-size:10px">${STATUS_LABEL[o.status]}</span>
-        <span style="font-size:13px;font-weight:500">$${o.price.toLocaleString()}</span>
-      </div>
-    </div>`).join('')}
-  </div>`;
-}
 
 function showVehicleHistoryInDetail(plate){
   const el=document.getElementById('vehicle-history-detail');
@@ -1647,7 +1625,8 @@ function saveOrderEdit(){
   closeOrderEdit();
   renderOrders();
   renderToday();
-  msg.textContent='';
+  // 若從結單頁呼叫，重渲結單
+  if(window._checkoutRefresh){ window._checkoutRefresh=false; renderCheckout(); }
 }
 
 function openWalkInSheet(){
@@ -1876,88 +1855,281 @@ function createOrder(){
 }
 
 const notified=new Set();
-function buildTodayTimeline(orders, nowM){
-  // 只顯示有時間的訂單（以建立時間的小時為主）
-  const HOUR_START=8, HOUR_END=20;
-  const PX=0.75; // px per minute，精簡版
+function buildTodayTimeline(orders, schedEntries, nowM){
+  const HOUR_START=8, HOUR_END=20, PX=0.75;
   const totalPx=(HOUR_END-HOUR_START)*60*PX;
   const startMins=HOUR_START*60;
 
-  // 收集今日訂單，用 created time 或 appt time 定位
-  const slots=orders.filter(o=>o.status!=='noshow').map(o=>{
-    let startMin=null;
-    if(o.appt){
-      const parts=o.appt.split(' ');
-      if(parts[1])startMin=toMinutes(parts[1]);
-    }
-    if(startMin===null){
-      const t=o.created.slice(11,16);
-      if(t)startMin=toMinutes(t);
-    }
-    if(startMin===null)return null;
-    const dur=o.time||60;
-    return{o, startMin, dur};
-  }).filter(Boolean).filter(s=>s.startMin>=startMins&&s.startMin<HOUR_END*60);
+  // 優先用排程資料，沒有排程用訂單 created 時間 fallback
+  let slots=[];
+  if(schedEntries&&schedEntries.length){
+    slots=schedEntries.map(e=>{
+      const startMin=toMinutes(e.start||'09:00');
+      const dur=e.dur||60;
+      const o=db.orders.find(ord=>ord.phone===e.phone&&(ord.plate===e.plate||!e.plate));
+      return{e,o,startMin,dur};
+    }).filter(s=>s.startMin>=startMins&&s.startMin<HOUR_END*60);
+  }
+  if(!slots.length){
+    slots=orders.filter(o=>o.status!=='noshow'&&o.status!=='cancelled').map(o=>{
+      let startMin=null;
+      if(o.appt){const p=o.appt.split(' ');if(p[1])startMin=toMinutes(p[1]);}
+      if(startMin===null){const t=o.created.slice(11,16);if(t)startMin=toMinutes(t);}
+      if(startMin===null)return null;
+      return{e:null,o,startMin,dur:o.time||60};
+    }).filter(Boolean).filter(s=>s.startMin>=startMins&&s.startMin<HOUR_END*60);
+  }
 
   if(!slots.length){
     return`<div style="padding:10px 18px;font-size:12px;color:var(--text3);border-bottom:1px solid var(--border)">今日尚無時間軸資料（開單時請填寫預約時間）</div>`;
   }
 
-  const statusColor={pending:'#EF9F27',doing:'#185FA5',done:'#1D9E75',noshow:'#A32D2D'};
-
+  const statusColor={pending:'#EF9F27',doing:'#185FA5',done:'#1D9E75',noshow:'#A32D2D',cancelled:'#ccc'};
   let inner='';
-  // hour labels
   for(let h=HOUR_START;h<HOUR_END;h++){
     const y=(h-HOUR_START)*60*PX;
-    inner+=`<div style="position:absolute;top:${y}px;left:0;right:0;border-top:0.5px solid var(--border);pointer-events:none">
-      <span style="font-size:9px;color:var(--text3);line-height:1;padding-left:2px">${h}</span>
-    </div>`;
-    // half hour dashed
-    inner+=`<div style="position:absolute;top:${y+30*PX}px;left:24px;right:0;border-top:0.5px dashed var(--border);pointer-events:none"></div>`;
+    inner+=`<div style="position:absolute;top:${y}px;left:0;right:0;border-top:0.5px solid var(--border);pointer-events:none"><span style="font-size:9px;color:var(--text3);line-height:1;padding-left:2px">${h}</span></div>`;
+    inner+=`<div style="position:absolute;top:${y+30*PX}px;left:0;right:0;border-top:0.5px dashed var(--border);opacity:0.5;pointer-events:none"></div>`;
   }
-
-  // now line
   if(nowM>=startMins&&nowM<HOUR_END*60){
-    const ny=(nowM-startMins)*PX;
-    inner+=`<div style="position:absolute;top:${ny}px;left:0;right:0;height:2px;background:#E24B4A;z-index:5;pointer-events:none">
-      <div style="position:absolute;left:-3px;top:-3px;width:7px;height:7px;border-radius:50%;background:#E24B4A"></div>
-      <span style="position:absolute;right:2px;top:-9px;font-size:9px;color:#E24B4A;font-weight:600">${fromMinutes(nowM)}</span>
-    </div>`;
+    inner+=`<div style="position:absolute;top:${Math.round((nowM-startMins)*PX)}px;left:0;right:0;height:2px;background:#E24B4A;z-index:5;pointer-events:none"><div style="position:absolute;left:-4px;top:-3px;width:8px;height:8px;border-radius:50%;background:#E24B4A"></div></div>`;
   }
-
-  // order blocks
-  slots.forEach(({o, startMin, dur})=>{
-    const topY=(startMin-startMins)*PX;
-    const h=Math.max(dur*PX,16);
-    const col=statusColor[o.status]||'#EF9F27';
-    const c=findCustomer(o.phone);
-    const name=c?(c.name||'未填姓名'):'';
-    const svcShort=o.service.split('、')[0].slice(0,4);
-    inner+=`<div style="position:absolute;top:${topY}px;height:${h}px;left:24px;right:2px;background:${col};border-radius:4px;padding:2px 4px;overflow:hidden;cursor:pointer;opacity:${o.status==='done'?0.5:1}" onclick="switchTab('orders')">
-      <div style="font-size:10px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${o.plate}</div>
-      ${h>22?`<div style="font-size:9px;color:rgba(255,255,255,0.85);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${svcShort} ${name}</div>`:''}
-    </div>`;
+  // 計算並排：找出所有時間重疊的 group
+  slots.forEach((s,i)=>{
+    s.col=0; s.cols=1;
+    const overlaps=slots.filter((t,j)=>j!==i&&t.startMin<s.startMin+s.dur&&t.startMin+t.dur>s.startMin);
+    if(overlaps.length){
+      const usedCols=overlaps.filter(t=>t.col!==undefined).map(t=>t.col);
+      let col=0;
+      while(usedCols.includes(col))col++;
+      s.col=col;
+      s.cols=Math.max(col+1, ...overlaps.map(t=>(t.col||0)+1));
+    }
+  });
+  // 修正所有 cols 為同組最大值
+  slots.forEach((s,i)=>{
+    const overlaps=slots.filter((t,j)=>j!==i&&t.startMin<s.startMin+s.dur&&t.startMin+t.dur>s.startMin);
+    if(overlaps.length) s.cols=Math.max(s.col+1,...overlaps.map(t=>t.col+1));
   });
 
-  return`<div style="border-bottom:1px solid var(--border);padding:8px 18px 8px">
-    <div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:6px">今日時間軸</div>
-    <div style="position:relative;height:${totalPx}px;overflow:hidden;border-radius:6px;background:var(--bg2)">
-      ${inner}
-    </div>
-    <div style="display:flex;gap:10px;margin-top:6px;flex-wrap:wrap">
-      <div style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--text2)"><div style="width:8px;height:8px;border-radius:2px;background:#EF9F27"></div>待處理</div>
-      <div style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--text2)"><div style="width:8px;height:8px;border-radius:2px;background:#185FA5"></div>進行中</div>
-      <div style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--text2)"><div style="width:8px;height:8px;border-radius:2px;background:#1D9E75"></div>完成</div>
-    </div>
-  </div>`;
+  slots.forEach(s=>{
+    const o=s.o;
+    const topPx=(s.startMin-startMins)*PX;
+    const hPx=Math.max(s.dur*PX,28);
+    const sc=o?statusColor[o.status]||'#999':'#999';
+    const plate=s.e?.plate||o?.plate||'未填';
+    const svc=s.e?.service||o?.service||'待補填';
+    const c=o?findCustomer(o.phone):null;
+    const name=c?(c.name||''): '';
+    const colW=100/(s.cols||1);const leftPct=(s.col||0)*colW;
+    inner+=`<div onclick="schedViewDate='${s.e?.date||todayStr()}';switchTodayView('day')" style="position:absolute;top:${topPx}px;left:calc(28px + ${leftPct}%);width:calc(${colW}% - 3px);height:${hPx}px;background:${sc}22;border-left:3px solid ${sc};border-radius:0 5px 5px 0;padding:2px 5px;cursor:pointer;overflow:hidden;z-index:2"><div style="font-size:11px;font-weight:700;color:${sc};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${plate}</div><div style="font-size:10px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${name} ${svc}</div></div>`;
+  });
+  return`<div style="position:relative;height:${totalPx}px;margin:0 18px 12px">${inner}</div>`;
 }
 
-let todayViewOffset = 0; // 0=今天, 1=明天, -1=昨天
 
 function getViewDate(offset){
   const d=new Date();
   d.setDate(d.getDate()+offset);
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+let todayView='today'; // 'today' | 'cal' | 'day'
+
+function switchTodayView(view){
+  todayView=view;
+  const todayContent=document.getElementById('today-content');
+  const calContent=document.getElementById('today-cal-content');
+  const btnToday=document.getElementById('view-btn-today');
+  const btnCal=document.getElementById('view-btn-cal');
+  const isToday=view==='today';
+  todayContent.style.display=isToday?'':'none';
+  calContent.style.display=isToday?'none':'';
+  btnToday.style.cssText=`flex:1;padding:12px;border:none;background:none;font-size:14px;cursor:pointer;font-family:inherit;border-bottom:2px solid ${isToday?'var(--green)':'transparent'};color:${isToday?'var(--green)':'var(--text3)'};font-weight:${isToday?'600':'500'}`;
+  btnCal.style.cssText=`flex:1;padding:12px;border:none;background:none;font-size:14px;cursor:pointer;font-family:inherit;border-bottom:2px solid ${!isToday?'var(--green)':'transparent'};color:${!isToday?'var(--green)':'var(--text3)'};font-weight:${!isToday?'600':'500'}`;
+  if(!isToday) renderScheduleInToday(view);
+  else renderToday();
+}
+
+function renderScheduleInToday(view){
+  const el=document.getElementById('today-cal-content');
+  if(!el)return;
+  if(view==='cal'||todayView==='cal'){
+    const{y,m}=schedMonth;
+    const wdays=['日','一','二','三','四','五','六'];
+    el.innerHTML=`
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:1px solid var(--border);background:var(--bg)">
+        <button onclick="monthNav(-1);renderScheduleInToday('cal')" style="padding:6px 14px;border:1px solid var(--border2);border-radius:var(--radius);background:none;cursor:pointer;font-size:14px">‹</button>
+        <span style="font-size:15px;font-weight:700">${y}年${m}月</span>
+        <button onclick="monthNav(1);renderScheduleInToday('cal')" style="padding:6px 14px;border:1px solid var(--border2);border-radius:var(--radius);background:none;cursor:pointer;font-size:14px">›</button>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(7,1fr);border-bottom:1px solid var(--border)">
+        ${wdays.map((d,i)=>`<div style="text-align:center;padding:6px 0;font-size:11px;font-weight:600;color:${i===0?'#A32D2D':i===6?'#185FA5':'var(--text2)'}">${d}</div>`).join('')}
+      </div>
+      <div id="today-mcal-grid" style="display:grid;grid-template-columns:repeat(7,1fr)"></div>
+    `;
+    renderMonthGrid('today-mcal-grid', y, m);
+  } else {
+    renderDayViewInToday();
+  }
+}
+
+function renderMonthGrid(gridId, y, m){
+  const el=document.getElementById(gridId);
+  if(!el)return;
+  const today=todayStr();
+  const first=new Date(y,m-1,1).getDay();
+  const days=new Date(y,m,0).getDate();
+  const prev=new Date(y,m-1,0).getDate();
+  let html='';
+  for(let i=0;i<first;i++){
+    const d=prev-first+1+i;
+    const ds=`${y}-${String(m-1||12).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    html+=monthCellInToday(ds,d,true,today);
+  }
+  for(let d=1;d<=days;d++){
+    const ds=`${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    html+=monthCellInToday(ds,d,false,today);
+  }
+  const remain=(7-((first+days)%7))%7;
+  for(let d=1;d<=remain;d++){
+    const ds=`${y+Math.floor(m/12)}-${String((m%12)+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    html+=monthCellInToday(ds,d,true,today);
+  }
+  el.innerHTML=html;
+}
+
+function monthCellInToday(ds,dayNum,otherMonth,today){
+  const entries=(db.schedule||[]).filter(e=>e.date===ds);
+  const isToday=ds===today, isSelected=ds===schedViewDate;
+  const isMon=new Date(ds+'T12:00:00').getDay()===1;
+  let bg=isToday?'#E1F5EE':isSelected?'#F0FBF5':'';
+  const dots=entries.slice(0,3).map(e=>{const c=getColor(e.phone);return`<div style="width:7px;height:7px;border-radius:2px;background:${c.bg};flex-shrink:0"></div>`;}).join('');
+  const onStaffNames=otherMonth?[]:appSettings.staff.map(s=>typeof s==='string'?s:s.name).filter(n=>getShiftStatus(ds,n)==='on');
+  const staffHtml=isMon?`<div style="font-size:7px;color:#854F0B;text-align:right;line-height:1.2">公休</div>`:onStaffNames.length?`<div style="font-size:7px;color:var(--text3);text-align:right;line-height:1.3">${onStaffNames.map(n=>`<div>${n}</div>`).join('')}</div>`:'';
+  return`<div onclick="schedViewDate='${ds}';schedView='day';switchTodayView('day')" style="border-right:0.5px solid var(--border);border-bottom:0.5px solid var(--border);min-height:72px;padding:4px;cursor:pointer;background:${bg};${isSelected?'outline:2px solid var(--green);outline-offset:-2px':''}">
+    <div style="font-size:13px;font-weight:${isToday?'700':'500'};color:${isToday?'var(--green)':otherMonth?'var(--text3)':'var(--text)'};margin-bottom:2px">${dayNum}</div>
+    <div style="display:flex;flex-wrap:wrap;gap:2px;margin-bottom:2px">${dots}</div>
+    ${staffHtml}
+  </div>`;
+}
+
+function renderDayViewInToday(){
+  const el=document.getElementById('today-cal-content');
+  if(!el)return;
+  const wdays=['日','一','二','三','四','五','六'];
+  const d=new Date(schedViewDate+'T12:00:00');
+  const label=`${schedViewDate} 週${wdays[d.getDay()]}`;
+  el.innerHTML=`
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:1px solid var(--border);background:var(--bg);position:sticky;top:104px;z-index:3">
+      <button onclick="dayNav(-1);renderScheduleInToday('day')" style="padding:6px 14px;border:1px solid var(--border2);border-radius:var(--radius);background:none;cursor:pointer;font-size:14px">‹</button>
+      <div style="text-align:center">
+        <div style="font-size:14px;font-weight:700">${label}</div>
+        <button onclick="schedViewDate=todayStr();schedView='day';renderScheduleInToday('day')" style="font-size:11px;color:var(--green);background:none;border:none;cursor:pointer;font-family:inherit;margin-top:2px">回今天</button>
+        <button onclick="switchTodayView('cal')" style="font-size:11px;color:var(--text3);background:none;border:none;cursor:pointer;font-family:inherit;margin-left:8px">← 月曆</button>
+      </div>
+      <button onclick="dayNav(1);renderScheduleInToday('day')" style="padding:6px 14px;border:1px solid var(--border2);border-radius:var(--radius);background:none;cursor:pointer;font-size:14px">›</button>
+    </div>
+    <div id="today-day-timeline" style="padding:0 16px 20px"></div>
+    <div style="padding:10px 16px;font-size:11px;color:var(--text3);border-top:1px solid var(--border)">
+      排程由<button onclick="switchTab('order')" style="background:none;border:none;color:var(--green);font-weight:700;font-size:inherit;cursor:pointer;font-family:inherit;padding:0;text-decoration:underline">開單頁面</button>填寫預約時間自動建立
+    </div>
+  `;
+  // 重用 renderDay 的核心邏輯
+  const entries=(db.schedule||[]).filter(e=>e.date===schedViewDate);
+  const timelineEl=document.getElementById('today-day-timeline');
+  if(!timelineEl)return;
+  if(!entries.length){
+    timelineEl.innerHTML=`<div style="text-align:center;padding:40px 0;color:var(--text3);font-size:14px">今日無排程<br><br><button class="btn primary" onclick="switchTab('order')" style="font-size:14px;margin-top:8px">立即開單 →</button></div>`;
+    return;
+  }
+  // 建立簡易時間軸
+  const HOUR_START=8,HOUR_END=20,PX=1.2;
+  const startMins=HOUR_START*60;
+  let inner='';
+  for(let h=HOUR_START;h<HOUR_END;h++){
+    const y=(h-HOUR_START)*60*PX;
+    inner+=`<div style="position:absolute;top:${y}px;left:0;right:0;border-top:0.5px solid var(--border)"><span style="font-size:10px;color:var(--text3);padding-left:2px">${h}</span></div>`;
+  }
+  const nowM=schedViewDate===todayStr()?new Date().getHours()*60+new Date().getMinutes():null;
+  if(nowM&&nowM>=startMins&&nowM<HOUR_END*60){
+    inner+=`<div style="position:absolute;top:${(nowM-startMins)*PX}px;left:0;right:0;height:2px;background:#E24B4A;z-index:5"><div style="position:absolute;left:-4px;top:-3px;width:8px;height:8px;border-radius:50%;background:#E24B4A"></div></div>`;
+  }
+  entries.forEach((e,idx)=>{
+    const es=toMinutes(e.start||'09:00');
+    const over=entries.filter(t=>t.id!==e.id&&toMinutes(t.start)<es+e.dur&&toMinutes(t.start)+t.dur>es);
+    const col=over.filter(t=>toMinutes(t.start)<es).length%2;
+    const cols=Math.min(over.length+1,2);
+    const wPct=100/cols,lPct=col*wPct;
+    const topPx=(es-startMins)*PX;
+    const hPx=Math.max(e.dur*PX,32);
+    const cu=findCustomer(e.phone);
+    const o=db.orders.find(ord=>ord.phone===e.phone&&ord.plate===e.plate)
+          ||db.orders.filter(ord=>ord.phone===e.phone).sort((a,b)=>b.created>a.created?1:-1)[0];
+    const status=o?.status||'pending';
+    const isDone=status==='done'||status==='cancelled'||status==='noshow';
+    const bgColor=isDone?'#EBEBEB':'#E1F5EE';
+    const borderColor=isDone?'#bbb':'#1D9E75';
+    const textColor=isDone?'#999':'#085041';
+    inner+=`<div style="position:absolute;top:${topPx}px;left:calc(32px + ${lPct}%);width:calc(${wPct}% - 4px);height:${hPx}px;background:${bgColor};border-left:3px solid ${borderColor};border-radius:0 6px 6px 0;padding:4px 8px;overflow:hidden;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,0.06)" onclick="openSchedDetail('${e.id}')">
+      <div style="font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:${textColor}">${e.plate}</div>
+      <div style="font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:${textColor};opacity:0.8">${cu?.name||''} · ${e.service}</div>
+      <div style="font-size:10px;color:${textColor};opacity:0.6">${e.start} · ${e.dur}min</div>
+    </div>`;
+  });
+  const totalPx=(HOUR_END-HOUR_START)*60*PX;
+  timelineEl.innerHTML=`<div style="position:relative;height:${totalPx}px;margin-top:8px">${inner}</div>`;
+}
+
+/* ── 補回工具函式 ── */
+function goOrder(phone){
+  orderState.phone='';orderState.plate='';
+  switchTab('order');
+  if(phone) setTimeout(()=>{
+    const el=document.getElementById('order-search');
+    if(el){el.value=phone;fillOrderCustomer();}
+  },100);
+}
+
+function goHistory(phone){
+  switchTab('search');
+  setTimeout(()=>{
+    const el=document.getElementById('search-q');
+    if(el){el.value=phone;onSearchQ();}
+  },100);
+}
+
+function toggleCustomerHistory(phone){
+  const el=document.getElementById(`hist-${phone}`);
+  if(!el)return;
+  el.style.display=el.style.display==='none'?'block':'none';
+}
+
+function monthNav(dir){
+  schedMonth.m+=dir;
+  if(schedMonth.m>12){schedMonth.m=1;schedMonth.y++;}
+  if(schedMonth.m<1){schedMonth.m=12;schedMonth.y--;}
+  renderScheduleInToday('cal');
+}
+
+function dayNav(dir){
+  const d=new Date(schedViewDate+'T12:00:00');
+  d.setDate(d.getDate()+dir);
+  schedViewDate=d.toISOString().slice(0,10);
+  const[y,m]=schedViewDate.split('-').map(Number);
+  schedMonth={y,m};
+  renderScheduleInToday('day');
+}
+
+let todayViewOffset = 0;
+
+function openSchedDetail(id){
+  const e=(db.schedule||[]).find(e=>e.id===id);
+  if(!e)return;
+  const o=db.orders.find(ord=>ord.phone===e.phone&&ord.plate===e.plate);
+  const c=findCustomer(e.phone);
+  const info=`${e.plate} — ${e.service}\n${c?.name||e.phone} · ${e.start} · ${e.dur}min${o?'\n狀態：'+STATUS_LABEL[o.status]:''}`;
+  alert(info);
 }
 
 function todayViewPrev(){ todayViewOffset--; renderToday(); }
@@ -2012,7 +2184,7 @@ function renderToday(){
   <div class="today-stats"><div class="today-stat"><div class="today-stat-val">${pending}</div><div class="today-stat-label">待處理</div></div><div class="today-stat"><div class="today-stat-val" style="color:#185FA5">${doing}</div><div class="today-stat-label">進行中</div></div><div class="today-stat"><div class="today-stat-val" style="color:#1D9E75">${done}</div><div class="today-stat-label">完成</div></div></div>`;
 
   // ── 今日迷你時間軸 ──
-  html += buildTodayTimeline(todayOrders, nowM);
+  html += buildTodayTimeline(todayOrders, todaySched, nowM);
 
   const mergedKeys=new Set(),workItems=[];
   const activeSched=todaySched.filter(e=>{const es=toMinutes(e.start);return es+e.dur>nowM;}).sort((a,b)=>toMinutes(a.start)-toMinutes(b.start));
@@ -2172,7 +2344,7 @@ function openStaffConfirm(id){
   // 多人時才顯示確認 sheet
   const c=findCustomer(o.phone);
   document.getElementById('staff-confirm-info').textContent=`${o.plate} — ${o.service} | ${c?(c.name||'未填姓名'):o.phone}`;
-  listEl.innerHTML=staffList.map((s,i)=>{
+  const listHtml=staffList.map((s,i)=>{
     if(s.name){
       return`<div style="display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:0.5px solid var(--border)">
         <div style="width:36px;height:36px;border-radius:50%;background:var(--green-bg);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600;color:var(--green-text)">${s.name[0]}</div>
@@ -2193,7 +2365,7 @@ function openStaffConfirm(id){
     }
   }).join('');
   staffConfirmStaffList=staffList;
-  document.getElementById('staff-confirm-list').innerHTML=listEl;
+  document.getElementById('staff-confirm-list').innerHTML=listHtml;
   document.getElementById('staff-confirm-overlay').style.display='block';
   document.getElementById('staff-confirm-sheet').style.display='block';
   updateStaffConfirmBtn();
@@ -2318,12 +2490,6 @@ function setStatus(id,status){
   o.status=status;
   scheduleSave();
   renderOrders();
-}
-function todayNotify(id){
-  const o=db.orders.find(o=>o.id===id);if(!o)return;
-  const c=findCustomer(o.phone);const name=c?.name||'客戶';
-  if(!notified.has(id)){notified.add(id);alert(`已記錄通知\n${name} (${o.phone})\n車牌 ${o.plate} 已完成 ${o.service}`);}
-  renderToday();
 }
 function assignStaff(id,staff){const o=db.orders.find(o=>o.id===id);if(o)o.staff=staff||'';}
 
@@ -2586,23 +2752,6 @@ function walletBadgeHtml(w){
 // function doTopup( removed
 
 
-function deductWallet(phone,amount,note){
-  const w=getWallet(phone);
-  let remain=amount;
-  // 優惠金先扣
-  if((w.bonus||0)>0){
-    const bonusUse=Math.min(w.bonus,remain);
-    w.bonus-=bonusUse;
-    remain-=bonusUse;
-    if(bonusUse>0) w.txns.push({type:'deduct',amount:bonusUse,note:`優惠金 ${note}`,date:nowStr(),balance:totalBalance(w)});
-  }
-  // 再扣儲值金
-  if(remain>0){
-    w.balance-=remain;
-    w.txns.push({type:'deduct',amount:remain,note,date:nowStr(),balance:totalBalance(w)});
-  }
-  return totalBalance(w);
-}
 
 function requestDelete(id){
   const o=db.orders.find(o=>o.id===id);if(!o)return;
@@ -2646,14 +2795,15 @@ function approveDelete(id){
 }
 
 function renderHistoryList(){
+  const el=document.getElementById('hist-list');
+  if(!el)return;
   const q=(document.getElementById('hist-search')?.value||'').trim();
-  let vehicles=[];
+  const vehicles=[];
   db.customers.forEach(c=>c.cars.forEach(car=>{
     if(!q||car.plate.toUpperCase().includes(q.toUpperCase())||c.name.includes(q)||c.phone.includes(q))
       vehicles.push({car,customer:c});
   }));
-  const el=document.getElementById('hist-list');
-  if(!vehicles.length){el.innerHTML='';document.getElementById('hist-result').innerHTML='';return;}
+  if(!vehicles.length){el.innerHTML='';const hr=document.getElementById('hist-result');if(hr)hr.innerHTML='';return;}
   el.innerHTML=vehicles.map(({car,customer})=>{
     const orders=db.orders.filter(o=>o.plate===car.plate);
     const total=orders.reduce((s,o)=>s+o.price,0);
@@ -2826,16 +2976,6 @@ function removeStaff(idx){
   document.getElementById('staff-msg').innerHTML=`<div class="msg msg-success">${name} 已移除</div>`;
 }
 
-function saveRewardSettings(){
-  const newBonus=parseInt(document.getElementById('setting-bonus-new').value);
-  const refBonus=parseInt(document.getElementById('setting-bonus-ref').value);
-  const msgEl=document.getElementById('reward-msg');
-  if(isNaN(newBonus)||isNaN(refBonus)||newBonus<0||refBonus<0){msgEl.innerHTML='<div class="msg msg-error">請輸入有效金額</div>';return;}
-  appSettings.bonusNew=newBonus;
-  appSettings.bonusRef=refBonus;
-  saveSettings();
-  msgEl.innerHTML=`<div class="msg msg-success">已儲存 — 新會員 $${newBonus}，推薦人 $${refBonus}</div>`;
-}
 
 function exportCustomers(){
   if(!db.customers.length){alert('目前沒有客戶資料');return;}
@@ -2994,9 +3134,6 @@ function getShiftWeekStart(offset){
   return monday;
 }
 
-function getShiftKey(dateStr, staffName){
-  return `shift:${dateStr}:${staffName}`;
-}
 
 function isMonday(dateStr){
   return new Date(dateStr+'T12:00:00').getDay()===1;
@@ -3022,7 +3159,7 @@ function shiftPrevWeek(){ shiftWeekOffset--; renderShiftTable(); }
 function shiftNextWeek(){ shiftWeekOffset++; renderShiftTable(); }
 
 function renderShiftTable(){
-  const el=document.getElementById('shift-table');
+  const el=document.getElementById('shift-table-admin')||document.getElementById('shift-table');
   const label=document.getElementById('shift-week-label');
   if(!el)return;
 
@@ -3091,6 +3228,23 @@ function getTodayOnStaff(){
 function renderCheckout(){
   const el=document.getElementById('checkout-list');
   if(!el)return;
+
+  // 先檢查設定是否完整
+  const settingsMissing=[];
+  if(!appSettings.staff||appSettings.staff.length===0) settingsMissing.push('員工名單');
+  const pt=appSettings.priceTable||{};
+  if(Object.keys(pt).length===0) settingsMissing.push('服務價目表');
+
+  if(settingsMissing.length){
+    el.innerHTML=`<div style="margin:20px 18px;background:#FFF5F5;border:1.5px solid #E24B4A;border-radius:var(--radius-lg);padding:20px;text-align:center">
+      <div style="font-size:24px;margin-bottom:10px">⚠️</div>
+      <div style="font-size:15px;font-weight:700;color:#A32D2D;margin-bottom:8px">結單前請先完成設定</div>
+      <div style="font-size:13px;color:#A32D2D;margin-bottom:16px">尚未填寫：<strong>${settingsMissing.join('、')}</strong></div>
+      <button class="btn primary" onclick="switchTab('admin')" style="font-size:14px">前往中控台設定 →</button>
+    </div>`;
+    return;
+  }
+
   const active=db.orders.filter(o=>o.status==='pending'||o.status==='doing').sort((a,b)=>a.created>b.created?1:-1);
   if(!active.length){
     el.innerHTML='<div class="empty">目前沒有待結單的訂單</div>';
@@ -3111,6 +3265,10 @@ function renderCheckout(){
     if(!c?.name) missing.push('客戶姓名');
     const canCheckout=missing.length===0;
 
+    // 黑卡升級提示：有鍍膜服務且尚未是黑卡
+    const hasCoating=o.service&&SVC_TIER.premium.some(s=>o.service.includes(s));
+    const showUpgrade=canCheckout&&hasCoating&&tier!=='black'&&c;
+
     return`<div style="background:var(--bg);border-radius:var(--radius-lg);border:1.5px solid ${canCheckout?'var(--border)':'#E24B4A'};margin-bottom:10px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.06)">
       ${isBlack?`<div style="background:#1A1A1A;color:#FFD700;font-size:11px;font-weight:700;padding:4px 14px;letter-spacing:0.05em">⬛ 黑卡 ${c?.memberId||''}</div>`:''}
       <div style="padding:14px;border-left:4px solid ${statusColor}">
@@ -3129,13 +3287,24 @@ function renderCheckout(){
             <div style="font-size:12px;font-weight:700;color:#A32D2D;margin-bottom:6px">⚠ 結單前請補齊以下資料：</div>
             ${missing.map(m=>`<div style="font-size:12px;color:#A32D2D;margin-bottom:2px">・${m}</div>`).join('')}
           </div>
-          <button onclick="switchTab('orders')" style="width:100%;padding:12px;border-radius:var(--radius);border:1.5px solid var(--border2);background:none;color:var(--text);font-size:14px;cursor:pointer;font-family:inherit;margin-bottom:8px">
-            ✏️ 前往訂單補填資料
+          <button onclick="openOrderEditFromCheckout('${o.id}')" style="width:100%;padding:12px;border-radius:var(--radius);border:1.5px solid var(--border2);background:none;color:var(--text);font-size:14px;cursor:pointer;font-family:inherit;margin-bottom:8px;font-weight:500">
+            ✏️ 補填資料
           </button>
         `:''}
 
-        <button onclick="${canCheckout?`todaySetStatus('${o.id}','done')`:`checkoutBlocked('${missing.join('、')}')`}"
-          class="btn ${canCheckout?'primary':'block'}" style="width:100%;font-size:15px;font-weight:700;padding:14px;${!canCheckout?'background:#F5F5F5;color:#999;border-color:#ddd;cursor:not-allowed':''}">
+        ${showUpgrade?`
+          <div style="background:#1A1A00;border:1.5px solid #FFD700;border-radius:var(--radius);padding:10px 14px;margin-bottom:10px;display:flex;align-items:center;gap:10px">
+            <div style="font-size:20px">⬛</div>
+            <div style="flex:1">
+              <div style="font-size:12px;font-weight:700;color:#FFD700;margin-bottom:2px">本次服務符合黑卡資格！</div>
+              <div style="font-size:11px;color:rgba(255,215,0,0.7)">結單後 ${c.name} 將自動升級為黑卡會員</div>
+            </div>
+          </div>
+        `:''}
+        <button onclick="attemptCheckout('${o.id}')"
+          class="btn ${canCheckout?'primary':'block'}"
+          ${!canCheckout?'disabled':''}
+          style="width:100%;font-size:15px;font-weight:700;padding:14px;${!canCheckout?'background:#F5F5F5;color:#bbb;border-color:#e0e0e0;cursor:not-allowed;opacity:0.6':''}">
           ${canCheckout?'✅ 完成結單':'❌ 資料不齊，無法結單'}
         </button>
       </div>
@@ -3143,8 +3312,30 @@ function renderCheckout(){
   }).join('');
 }
 
+function attemptCheckout(id){
+  const o=db.orders.find(o=>o.id===id);if(!o)return;
+  const c=findCustomer(o.phone);
+  const missing=[];
+  if(!o.plate) missing.push('車牌');
+  if(!o.service) missing.push('服務項目');
+  if(!o.price||o.price===0) missing.push('金額');
+  if(!c?.name) missing.push('客戶姓名');
+  if(missing.length>0){
+    alert(`❌ 無法結單，請先補齊：\n・${missing.join('\n・')}`);
+    return;
+  }
+  todaySetStatus(id,'done');
+}
+
+function openOrderEditFromCheckout(id){
+  openOrderEdit(id);
+  // 覆寫 saveOrderEdit 完成後的行為，改成重渲結單
+  const origSave=window._origSaveOrderEdit;
+  window._checkoutRefresh=true;
+}
+
 function checkoutBlocked(missing){
-  alert(`請先補齊以下資料才能結單：\n\n・${missing.split('、').join('\n・')}\n\n請至「訂單紀錄」展開該筆訂單補填。`);
+  alert(`請先補齊：${missing}`);
 }
 
 
@@ -3225,6 +3416,27 @@ function showAdminSection(section){
       <div id="inventory-list" style="background:var(--bg);min-height:200px;padding-bottom:40px"></div>
       <span id="expense-filter-month" style="display:none"></span>`;
     renderInventory();
+  } else if(section==='shift'){
+    content.innerHTML=`
+      <div style="padding:16px 18px">
+        <div style="font-size:11px;font-weight:700;color:var(--text3);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:12px">班表管理</div>
+        <div class="card" style="padding:0;overflow:hidden">
+          <div style="padding:10px 14px;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+            <div style="font-size:12px;color:var(--text2)">週一固定公休 · 點格子切換出勤</div>
+            <div style="display:flex;gap:6px;align-items:center">
+              <button onclick="shiftPrevWeek();renderShiftTable()" style="padding:4px 10px;border:1px solid var(--border2);border-radius:var(--radius);background:none;cursor:pointer;font-size:13px">‹</button>
+              <span id="shift-week-label" style="font-size:13px;font-weight:500"></span>
+              <button onclick="shiftNextWeek();renderShiftTable()" style="padding:4px 10px;border:1px solid var(--border2);border-radius:var(--radius);background:none;cursor:pointer;font-size:13px">›</button>
+            </div>
+          </div>
+          <div id="shift-table-admin" style="overflow-x:auto"></div>
+          <div style="padding:10px 14px;border-top:1px solid var(--border)">
+            <button class="btn primary block" onclick="saveShift()">儲存班表</button>
+            <div id="shift-msg" style="margin-top:6px"></div>
+          </div>
+        </div>
+      </div>`;
+    renderShiftTable();
   } else if(section==='settings'){
     // 直接顯示 screen-settings 的內容
     const orig=document.getElementById('screen-settings');
@@ -3244,9 +3456,8 @@ function backToAdminMenu(){
   document.getElementById('admin-menu').style.display='block';
 }
 
-function renderExpense(){ renderInventory(); }
 
-
+/* ═══ 進銷存系統 ═══ */
 const EXPENSE_CAT={fixed:'固定費用',material:'耗材進貨',other:'其他'};
 const EXPENSE_CAT_COLOR={fixed:'#0C447C',material:'#633806',other:'#5F5E5A'};
 const EXPENSE_CAT_BG={fixed:'#E6F1FB',material:'#FAEEDA',other:'#F1EFE8'};
@@ -3259,8 +3470,6 @@ function getMonthLabel(ym){const[y,m]=ym.split('-');return`${y}年${parseInt(m)}
 function getPrevMonth(ym){const[y,m]=ym.split('-').map(Number);const d=new Date(y,m-2,1);return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;}
 function getMonthExpense(ym){return(appSettings.inventory||[]).filter(i=>i.date?.startsWith(ym)).reduce((s,i)=>s+(Number(i.amount)||0),0);}
 function getMonthRevenue(ym){return db.orders.filter(o=>o.status==='done'&&o.created.startsWith(ym)).reduce((s,o)=>s+o.price,0);}
-function initExpenseMonthFilter(){}
-function updateExpenseSummary(){renderInventory();}
 
 function renderInventory(){
   const ym=expenseViewMonth;
@@ -3280,7 +3489,6 @@ function renderInventory(){
   const revDiff=prevRev>0?Math.round((revenue-prevRev)/prevRev*100):null;
   const profDiff=prevProfit!==0?Math.round((profit-prevProfit)/Math.abs(prevProfit)*100):null;
 
-  // 月總覽
   const ovEl=document.getElementById('expense-overview');
   if(ovEl) ovEl.innerHTML=`
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
@@ -3302,7 +3510,6 @@ function renderInventory(){
     </div>
     <div style="margin-top:10px;font-size:12px;color:var(--text3);text-align:center">上月：營收 $${prevRev.toLocaleString()} · 淨利 $${prevProfit.toLocaleString()}</div>`;
 
-  // 支出結構
   const bdEl=document.getElementById('expense-breakdown-chart');
   if(bdEl){
     const cats={fixed:0,material:0,other:0};
@@ -3323,14 +3530,12 @@ function renderInventory(){
     }).join('');
   }
 
-  // 快速帶入
   const tmplEl=document.getElementById('expense-templates');
   if(tmplEl){
     const templates=appSettings.expenseTemplates||[{name:'房租',amount:25000,cat:'fixed'},{name:'水費',amount:0,cat:'fixed'},{name:'電費',amount:0,cat:'fixed'}];
     tmplEl.innerHTML=templates.map((t,i)=>`<button onclick="applyExpenseTemplate(${i})" style="padding:8px 14px;border-radius:99px;border:1.5px solid ${EXPENSE_CAT_COLOR[t.cat||'other']};background:${EXPENSE_CAT_BG[t.cat||'other']};color:${EXPENSE_CAT_COLOR[t.cat||'other']};font-size:13px;cursor:pointer;font-family:inherit;font-weight:600;min-height:40px">${t.name}${t.amount?` $${Number(t.amount).toLocaleString()}`:''}</button>`).join('');
   }
 
-  // 記錄列表
   const listEl=document.getElementById('inventory-list');
   if(!listEl)return;
   if(!filtItems.length){listEl.innerHTML=`<div style="padding:32px;text-align:center;color:var(--text3);font-size:14px">${thisItems.length?'此類別無記錄':'本月尚無支出記錄'}</div>`;return;}
@@ -3574,70 +3779,19 @@ function todayStr(){const d=new Date();return`${d.getFullYear()}-${String(d.getM
 function dateStr(y,m,d){return`${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;}
 
 let schedMonth={y:2026,m:5};
-let schedViewDate='2026-05-04';
+let schedViewDate='';
 let schedView='month';
 
 const colorCache={};
 function getColor(phone){if(!colorCache[phone]){const idx=Object.keys(colorCache).length%SLOT_COLORS.length;colorCache[phone]={bg:SLOT_COLORS[idx],text:SLOT_TEXT[idx]};}return colorCache[phone];}
-function countOverlapAt(entries,startM,endM){return entries.filter(e=>{const es=toMinutes(e.start);return es<endM&&es+e.dur>startM;}).length;}
 
-function renderSchedule(){if(schedView==='month')renderMonth();else renderDay();}
 
-function renderMonth(){
-  schedView='month';
-  document.getElementById('sched-month-view').style.display='block';
-  document.getElementById('sched-day-view').style.display='none';
-  const{y,m}=schedMonth;
-  document.getElementById('month-label').textContent=`${y} 年 ${m} 月`;
-  const first=new Date(y,m-1,1).getDay(),days=new Date(y,m,0).getDate(),prevDays=new Date(y,m-1,0).getDate(),today=todayStr();
-  let html='<div style="display:grid;grid-template-columns:repeat(7,1fr)">',cells=0;
-  for(let i=0;i<first;i++){const dd=prevDays-first+1+i;html+=monthCell(dateStr(m===1?y-1:y,m===1?12:m-1,dd),dd,true,today);cells++;}
-  for(let d=1;d<=days;d++){html+=monthCell(dateStr(y,m,d),d,false,today);cells++;}
-  const remain=cells%7===0?0:7-cells%7;
-  for(let i=1;i<=remain;i++)html+=monthCell(dateStr(m===12?y+1:y,m===12?1:m+1,i),i,true,today);
-  html+='</div>';
-  document.getElementById('month-grid').innerHTML=html;
-}
 
-function monthCell(ds,dayNum,otherMonth,today){
-  const entries=(db.schedule||[]).filter(e=>e.date===ds);
-  const isToday=ds===today,isSelected=ds===schedViewDate;
-  let fullyBooked=false,hasOverflow=false;
-  if(entries.length>=2){const buckets={};entries.forEach(e=>{const es=toMinutes(e.start);for(let m=es;m<es+e.dur;m++)buckets[m]=(buckets[m]||0)+1;});const counts=Object.values(buckets);if(counts.some(c=>c>=2))fullyBooked=true;if(counts.some(c=>c>2))hasOverflow=true;}
-  let cls='mcal-cell';if(otherMonth)cls+=' other-month';if(isToday)cls+=' today';if(isSelected)cls+=' selected';if(hasOverflow)cls+=' cal-overflow';else if(fullyBooked)cls+=' cal-full';
-  const phonesSeen={};entries.forEach(e=>phonesSeen[e.phone]=getColor(e.phone));
-  const dots=Object.entries(phonesSeen).slice(0,3).map(([p,c])=>`<div class="mcal-dot" style="background:${c.bg}"></div>`).join('');
-  const extra=entries.length>3?`<div class="mcal-more">+${entries.length-3}</div>`:'';
-  const fullBadge=hasOverflow?`<div class="cal-full-badge" style="background:#E24B4A">⚠ 超額</div>`:fullyBooked?`<div class="cal-full-badge">🔒 額滿</div>`:'';
-  // 出勤員工小字（右下角）
-  const isMon=new Date(ds+'T12:00:00').getDay()===1;
-  let staffHtml='';
-  if(!otherMonth){
-    if(isMon){
-      staffHtml=`<div style="font-size:8px;color:#854F0B;text-align:right;margin-top:2px;line-height:1.2">公休</div>`;
-    } else {
-      const onStaffNames=appSettings.staff.map(s=>typeof s==='string'?s:s.name).filter(n=>getShiftStatus(ds,n)==='on');
-      if(onStaffNames.length){
-        staffHtml=`<div style="font-size:7px;color:var(--text3);text-align:right;margin-top:2px;line-height:1.4">${onStaffNames.map(n=>`<div>${n}</div>`).join('')}</div>`;
-      }
-    }
-  }
-  return`<div class="${cls}" onclick="openDay('${ds}')"><div class="mcal-day-num">${dayNum}</div><div class="mcal-dot-row">${dots}${extra}</div>${fullBadge}${staffHtml}</div>`;
-}
 
-function monthNav(dir){schedMonth.m+=dir;if(schedMonth.m>12){schedMonth.m=1;schedMonth.y++;}if(schedMonth.m<1){schedMonth.m=12;schedMonth.y--;}renderMonth();}
 
-function openDay(ds){
-  schedViewDate=ds;schedView='day';
-  document.getElementById('sched-month-view').style.display='none';
-  document.getElementById('sched-day-view').style.display='block';
-  // 確保服務選單有資料（如果還存在）
-  const sel=document.getElementById('sched-service');
-  if(sel&&sel.options.length===0) sel.innerHTML=SERVICES.map(s=>`<option>${s}</option>`).join('');
-  renderDay();
-}
+
 function backToMonth(){schedView='month';document.getElementById('sched-month-view').style.display='block';document.getElementById('sched-day-view').style.display='none';renderMonth();}
-function dayNav(dir){const d=new Date(schedViewDate+'T12:00:00');d.setDate(d.getDate()+dir);schedViewDate=d.toISOString().slice(0,10);const[y,m]=schedViewDate.split('-').map(Number);schedMonth={y,m};renderDay();}
+
 
 let schedBeforeDrag = null; // 拖曳前備份
 
@@ -3713,14 +3867,20 @@ function rebuildBlocks(entries, overlay, colorMap, startMins, HOUR_END, PX, SNAP
     const cols=Math.min(concurrent.length+1,2),wPct=100/cols,lPct=slotIdx*wPct;
     const topPx=(es-startMins)*PX;
     const hPx=Math.max(e.dur*PX,28);
-    const col=colorMap[e.phone];
     const cu=findCustomer(e.phone);
     const name=cu?(cu.name||'未填姓名'):'';
+    // 找對應訂單：優先 plate 匹配，找不到就用 phone 最新訂單
+    const o=db.orders.find(ord=>ord.phone===e.phone&&ord.plate===e.plate)
+          ||db.orders.filter(ord=>ord.phone===e.phone).sort((a,b)=>b.created>a.created?1:-1)[0];
+    const status=o?.status||'pending';
+    const isDone=status==='done'||status==='cancelled'||status==='noshow';
+    const blockBg=isDone?'#EBEBEB':'#E1F5EE';
+    const blockColor=isDone?'#999':'#085041';
 
     const bl=document.createElement('div');
     bl.className='sched-block';
     bl.dataset.id=e.id;
-    bl.style.cssText=`top:${Math.round(topPx)}px;height:${Math.round(hPx)}px;left:calc(${lPct}% + 2px);width:calc(${wPct}% - 4px);background:${col.bg};color:${col.text};pointer-events:auto;cursor:grab;touch-action:none;user-select:none`;
+    bl.style.cssText=`top:${Math.round(topPx)}px;height:${Math.round(hPx)}px;left:calc(${lPct}% + 2px);width:calc(${wPct}% - 4px);background:${blockBg};color:${blockColor};pointer-events:auto;cursor:grab;touch-action:none;user-select:none;border-left:3px solid ${isDone?'#bbb':'#1D9E75'};border-radius:0 6px 6px 0`;
     bl.innerHTML=`<div class="sb-plate">${e.plate}</div><div class="sb-svc">${e.service} ${e.dur}min</div>${name?`<div style="font-size:10px;opacity:0.75;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${name}</div>`:''} ${e.staff?`<div style="font-size:10px;opacity:0.7;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">👤 ${e.staff}${e.assistants?` +${e.assistants}`:''}</div>`:''}<div style="position:absolute;bottom:0;left:0;right:0;height:12px;display:flex;align-items:center;justify-content:center;cursor:ns-resize" data-resize="1"><div style="width:22px;height:2px;border-radius:1px;background:currentColor;opacity:0.4"></div></div>`;
 
     let dragMode=null;
@@ -3805,25 +3965,7 @@ function rebuildBlocks(entries, overlay, colorMap, startMins, HOUR_END, PX, SNAP
   });
 }
 
-function rebuildOverflow(entries, overlay, startMins, HOUR_END, PX){
-  overlay.querySelectorAll('.sched-overflow-bar').forEach(b=>b.remove());
-  const overlapBuckets={};
-  entries.forEach(e=>{const es=toMinutes(e.start);for(let m=es;m<es+e.dur;m++){if(!overlapBuckets[m])overlapBuckets[m]=[];overlapBuckets[m].push(e.id);}});
-  const overflowRanges=[];let inO=false,oStart=null;
-  for(let m=startMins;m<HOUR_END*60;m++){
-    const cnt=(overlapBuckets[m]||[]).length;
-    if(cnt>2){if(!inO){inO=true;oStart=m;}}
-    else{if(inO){overflowRanges.push({start:oStart,end:m});inO=false;}}
-  }
-  if(inO)overflowRanges.push({start:oStart,end:HOUR_END*60});
-  overflowRanges.forEach(r=>{
-    const topPx=(r.start-startMins)*PX,hPx=(r.end-r.start)*PX;
-    const bl=document.createElement('div');bl.className='sched-overflow-bar';
-    bl.style.cssText=`top:${Math.round(topPx)}px;height:${Math.round(hPx)}px;left:2px;right:2px`;
-    bl.innerHTML=`⚠ 超出2台 ${fromMinutes(r.start)}–${fromMinutes(r.end)} (${r.end-r.start}min)`;
-    overlay.appendChild(bl);
-  });
-}
+
 
 let schedDetailId = null;
 
