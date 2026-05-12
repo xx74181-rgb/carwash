@@ -228,7 +228,7 @@ textarea{resize:vertical;min-height:72px}
     <div class="tab" onclick="switchTab('shift')">班表</div>
     <div class="tab" onclick="switchTab('admin')">中控台</div>
     <div style="margin-left:auto;padding:0 12px;display:flex;align-items:center;flex-shrink:0">
-      <span style="font-size:10px;font-weight:600;color:rgba(255,255,255,0.35);letter-spacing:0.04em">v3.51</span>
+      <span style="font-size:10px;font-weight:600;color:rgba(255,255,255,0.35);letter-spacing:0.04em">v3.52</span>
     </div>
   </div>
 
@@ -2112,10 +2112,8 @@ function createOrder(){
     showToast('⚠️ 請至少選擇一項服務',{duration:2200});
     return;
   }
-  if(!orderState.plate){
-    showToast('⚠️ 請選擇車輛',{duration:2200});
-    return;
-  }
+  // v3.52: 車牌允許開單時為空(走入店未登記場景),但結帳前會擋下要求補填
+  // 看 todaySetStatus / setStatus 的 missing 檢查
   const price=parseInt(document.getElementById('order-price').value)||0;
   const time=parseInt(document.getElementById('order-time').value)||0;
   if(time<=0){
@@ -2152,7 +2150,7 @@ function createOrder(){
       const todayMin=Math.min(remMin,Math.max(avail,0));
       if(todayMin>0){
         const schedId='S'+(Date.now()+sid).toString().slice(-6);
-        db.schedule.push({id:schedId,phone:orderState.phone,plate:orderState.plate||'未填車牌',service:orderState.service||'待補填',date:dateStr,start:curStart,dur:todayMin,staff,assistants});
+        db.schedule.push({id:schedId,phone:orderState.phone,plate:orderState.plate||'',service:orderState.service||'待補填',date:dateStr,start:curStart,dur:todayMin,staff,assistants});
         sid++;
       }
       remMin-=avail;
@@ -3155,6 +3153,21 @@ function todaySetStatus(id,status){
 function setStatus(id,status){
   const o=db.orders.find(o=>o.id===id);if(!o)return;
   if(status==='done'&&o.status!=='done'){
+    // v3.52: 結單前資料完整性檢查(對齊 todaySetStatus,確保訂單紀錄頁也擋下缺資料)
+    const c=findCustomer(o.phone);
+    const missing=[];
+    if(!o.plate) missing.push('車牌');
+    if(!o.service) missing.push('服務項目');
+    if(!o.price||o.price===0) missing.push('金額');
+    if(!c?.name) missing.push('客戶姓名');
+    if(missing.length>0){
+      askConfirm({
+        title:'❌ 無法完成結單',
+        body:`請先補齊以下資料:\n・${missing.join('\n・')}\n\n要前往補填資料嗎?`,
+        okText:'前往補填'
+      },()=>openOrderEdit(id));
+      return;
+    }
     openPaySheet(id);
     return;
   }
