@@ -119,16 +119,16 @@ textarea{resize:vertical;min-height:72px}
 .bar-wrap{margin:5px 0}
 .bar-track{height:8px;background:var(--bg3);border-radius:99px;overflow:hidden}
 .bar-fill{height:100%;background:var(--green);border-radius:99px;transition:width 0.4s ease}
-.hint-box{border:1.5px solid #BA7517;border-radius:var(--radius-lg);padding:14px 16px;margin-bottom:12px;background:#FAEEDA}
-.hint-title{font-size:13px;font-weight:700;color:#633806;margin-bottom:10px;display:flex;align-items:center;gap:6px}
-.hint-dot{width:7px;height:7px;border-radius:50%;background:#BA7517;flex-shrink:0}
-.hint-item{display:flex;align-items:flex-start;gap:8px;padding:7px 0;border-bottom:1px solid #F5C97A}
+.hint-box{border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px;margin-bottom:10px;background:#FAFAF8}
+.hint-title{font-size:11px;font-weight:600;color:var(--text2);margin-bottom:6px;display:flex;align-items:center;gap:6px;letter-spacing:0.02em}
+.hint-dot{width:6px;height:6px;border-radius:50%;background:#BA7517;flex-shrink:0}
+.hint-item{display:flex;align-items:flex-start;gap:8px;padding:4px 0}
 .hint-item:last-child{border-bottom:none}
-.hint-item-text{font-size:14px;color:#4A2800;line-height:1.4}
-.hint-tag{display:inline-block;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:600;background:#BA7517;color:#fff;white-space:nowrap;margin-left:4px;flex-shrink:0}
-.hint-quick{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
-.hint-quick-btn{padding:9px 14px;border-radius:99px;border:1.5px solid #BA7517;font-size:13px;cursor:pointer;background:#fff;color:#633806;font-family:inherit;transition:all 0.15s;min-height:44px;font-weight:500}
-.hint-quick-btn:active{background:#BA7517;color:#fff}
+.hint-item-text{font-size:12px;color:var(--text2);line-height:1.45}
+.hint-tag{display:inline-block;padding:1px 7px;border-radius:99px;font-size:10px;font-weight:600;background:#F5E6CC;color:#633806;white-space:nowrap;margin-left:0;flex-shrink:0}
+.hint-quick{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.hint-quick-btn{padding:6px 12px;border-radius:99px;border:1px solid var(--border2);font-size:12px;cursor:pointer;background:var(--bg);color:var(--text2);font-family:inherit;transition:all 0.15s;font-weight:500}
+.hint-quick-btn:active{background:var(--bg2);color:var(--text)}
 
 /* ── Calendar ── */
 .mcal-cell{border-right:0.5px solid var(--border);border-bottom:0.5px solid var(--border);min-height:80px;padding:5px;cursor:pointer;transition:background 0.1s;position:relative}
@@ -225,9 +225,10 @@ textarea{resize:vertical;min-height:72px}
     <div class="tab active" onclick="switchTab('today')">工作時程</div>
     <div class="tab" onclick="switchTab('search')">會員管理</div>
     <div class="tab" onclick="switchTab('orders')">訂單紀錄</div>
+    <div class="tab" onclick="switchTab('shift')">班表</div>
     <div class="tab" onclick="switchTab('admin')">中控台</div>
     <div style="margin-left:auto;padding:0 12px;display:flex;align-items:center;flex-shrink:0">
-      <span style="font-size:10px;font-weight:600;color:rgba(255,255,255,0.35);letter-spacing:0.04em">v3.38</span>
+      <span style="font-size:10px;font-weight:600;color:rgba(255,255,255,0.35);letter-spacing:0.04em">v3.43</span>
     </div>
   </div>
 
@@ -474,6 +475,57 @@ textarea{resize:vertical;min-height:72px}
   <!-- 車輛紀錄 -->
 
     <!-- 排程 -->
+
+  <!-- 班表(獨立 Tab,從中控台「📅 排班管理」也可進入) -->
+  <div id="screen-shift" class="screen" style="padding:0">
+    <!-- 鎖定畫面 (v3.42: 共用中控台密碼) -->
+    <div id="shift-lock" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;padding:32px">
+      <div style="font-size:36px;margin-bottom:16px">🔐</div>
+      <div style="font-size:20px;font-weight:700;color:var(--text);margin-bottom:6px">班表管理</div>
+      <div style="font-size:14px;color:var(--text3);margin-bottom:28px">請輸入管理員密碼</div>
+      <input id="shift-pwd-input" type="password" placeholder="密碼" maxlength="10"
+        style="width:200px;padding:12px;font-size:18px;text-align:center;border-radius:var(--radius);border:1.5px solid var(--border2);font-family:inherit;margin-bottom:14px"
+        onkeydown="if(event.key==='Enter')shiftLogin()" />
+      <button class="btn primary" onclick="shiftLogin()" style="width:200px;font-size:16px;padding:14px">進入</button>
+      <div id="shift-pwd-msg" style="margin-top:12px;font-size:13px;color:#A32D2D;min-height:20px"></div>
+    </div>
+
+    <!-- 解鎖後內容 -->
+    <div id="shift-content" style="display:none">
+      <div style="padding:16px 18px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+          <div style="font-size:11px;font-weight:700;color:var(--text3);letter-spacing:0.06em;text-transform:uppercase">班表管理</div>
+          <button onclick="shiftLogout()" style="font-size:11px;color:var(--text3);background:none;border:1px solid var(--border);border-radius:99px;padding:4px 10px;cursor:pointer;font-family:inherit">🔒 鎖定</button>
+        </div>
+        <div class="card" style="padding:0;overflow:hidden">
+          <div style="padding:10px 14px;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+            <div style="font-size:12px;color:var(--text2)">週一固定公休 · 點格子切換出勤</div>
+            <div style="display:flex;gap:6px;align-items:center">
+              <button onclick="shiftPrevWeek();renderShiftTable()" style="padding:4px 10px;border:1px solid var(--border2);border-radius:var(--radius);background:none;cursor:pointer;font-size:13px">‹</button>
+              <span id="shift-week-label" style="font-size:13px;font-weight:500"></span>
+              <button onclick="shiftNextWeek();renderShiftTable()" style="padding:4px 10px;border:1px solid var(--border2);border-radius:var(--radius);background:none;cursor:pointer;font-size:13px">›</button>
+            </div>
+          </div>
+          <div id="shift-table-admin" style="overflow-x:auto"></div>
+          <div style="padding:10px 14px;border-top:1px solid var(--border)">
+            <button class="btn primary block" onclick="saveShift()">儲存班表</button>
+            <div id="shift-msg" style="margin-top:6px"></div>
+          </div>
+        </div>
+
+        <!-- 本月出勤總覽 -->
+        <div style="font-size:11px;font-weight:700;color:var(--text3);letter-spacing:0.06em;text-transform:uppercase;margin:20px 0 10px">本月出勤總覽</div>
+        <div class="card" style="padding:0;overflow:hidden">
+          <div id="shift-cal-nav" style="padding:10px 14px;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+            <button onclick="shiftCalPrev()" style="padding:4px 10px;border:1px solid var(--border2);border-radius:var(--radius);background:none;cursor:pointer;font-size:13px">‹</button>
+            <span id="shift-cal-label" style="font-size:13px;font-weight:700"></span>
+            <button onclick="shiftCalNext()" style="padding:4px 10px;border:1px solid var(--border2);border-radius:var(--radius);background:none;cursor:pointer;font-size:13px">›</button>
+          </div>
+          <div id="shift-cal-grid"></div>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- 中控台 -->
   <div id="screen-admin" class="screen" style="padding:0">
@@ -1004,15 +1056,23 @@ let orderStateVehicle = null;
 function switchTab(name) {
   // checkout 已整合進工作時程，相容舊呼叫 → 改去 today
   if(name==='checkout') name='today';
-  const names = ['order','today','search','orders','admin','dashboard','expense','settings'];
+  const names = ['order','today','search','orders','shift','admin','dashboard','expense','settings'];
   document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active', names[i]===name));
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById('screen-'+name).classList.add('active');
   if(name==='today') renderToday();
-  if(name==='search') renderCustomerList();
+  if(name==='search'){
+    // v3.43: 預設展開客戶列表(對小店來說空白沒意義)
+    const list=document.getElementById('customer-list');
+    const btn=document.getElementById('customer-list-toggle');
+    if(list){ list.style.display='block'; }
+    if(btn){ btn.textContent='☰ 收起客戶列表'; }
+    renderCustomerList();
+  }
   if(name==='orders') renderOrders();
   if(name==='dashboard') renderDash();
   if(name==='schedule') renderSchedule();
+  if(name==='shift'){ renderShiftScreen(); }
   // wallet tab removed
   // checkout tab removed (整合進工作時程)
   if(name==='order'){ initOrderTab(); }
@@ -2011,8 +2071,8 @@ function createOrder(){
       curStart='10:00';
     }
   }
-  msgEl.innerHTML=`<div class="msg msg-success">訂單 ${id} 已建立 — ${orderState.service} / ${orderState.plate} / $${price.toLocaleString()}${appt?' / 預約'+appt:''}${staff?' / '+staff:''}</div>`;
-  // 中央 toast 通知
+  // 中央 toast 通知（取代舊的 #order-msg 訊息列，避免重複）
+  msgEl.innerHTML='';
   showToast(`訂單已建立<br><span style="font-size:14px;opacity:0.85;font-weight:500">${orderState.plate || '—'}　$${price.toLocaleString()}</span>`, {duration:2200});
   orderState={phone:'',plate:'',service:'',payment:null};
   ['order-search','order-price','order-time','order-note','order-appt-date','order-appt-time','order-assistants'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
@@ -2068,6 +2128,12 @@ function buildTodayTimeline(orders, schedEntries, nowM){
   }
 
   if(!slots.length){
+    // 區分「完全沒訂單」vs「訂單時間落在 8:00–20:00 範圍外」
+    const hasOrders = orders && orders.length > 0;
+    const hasSched = schedEntries && schedEntries.length > 0;
+    if(hasOrders || hasSched){
+      return`<div style="padding:10px 18px;font-size:12px;color:var(--text3);border-bottom:1px solid var(--border)">⏱ 訂單時間落在顯示範圍外（時間軸僅顯示 08:00–20:00）</div>`;
+    }
     return`<div style="padding:10px 18px;font-size:12px;color:var(--text3);border-bottom:1px solid var(--border)">今日尚無時間軸資料（開單時請填寫預約時間）</div>`;
   }
 
@@ -2194,15 +2260,61 @@ function renderMonthGrid(gridId, y, m){
 function monthCellInToday(ds,dayNum,otherMonth,today){
   const entries=(db.schedule||[]).filter(e=>e.date===ds);
   const isToday=ds===today, isSelected=ds===schedViewDate;
-  const isMon=new Date(ds+'T12:00:00').getDay()===1;
-  let bg=isToday?'#E1F5EE':isSelected?'#F0FBF5':'';
-  const dots=entries.slice(0,3).map(e=>{const c=getColor(e.phone);return`<div style="width:7px;height:7px;border-radius:2px;background:${c.bg};flex-shrink:0"></div>`;}).join('');
-  const onStaffNames=otherMonth?[]:appSettings.staff.map(s=>typeof s==='string'?s:s.name).filter(n=>getShiftStatus(ds,n)==='on');
-  const staffHtml=isMon?`<div style="font-size:7px;color:#854F0B;text-align:right;line-height:1.2">公休</div>`:onStaffNames.length?`<div style="font-size:7px;color:var(--text3);text-align:right;line-height:1.3">${onStaffNames.map(n=>`<div>${n}</div>`).join('')}</div>`:'';
-  return`<div onclick="schedViewDate='${ds}';schedView='day';switchTodayView('day')" style="border-right:0.5px solid var(--border);border-bottom:0.5px solid var(--border);min-height:72px;padding:4px;cursor:pointer;background:${bg};${isSelected?'outline:2px solid var(--green);outline-offset:-2px':''}">
-    <div style="font-size:13px;font-weight:${isToday?'700':'500'};color:${isToday?'var(--green)':otherMonth?'var(--text3)':'var(--text)'};margin-bottom:2px">${dayNum}</div>
-    <div style="display:flex;flex-wrap:wrap;gap:2px;margin-bottom:2px">${dots}</div>
-    ${staffHtml}
+  const isOff=isMonday(ds);  // 週一公休
+
+  // 訂單量(同一張訂單可能拆多 schedule,用 phone+plate 去重)
+  const uniqOrders = new Set(entries.map(e=>`${e.phone}|${e.plate}`));
+  const orderCount = uniqOrders.size;
+  // 總工時(分鐘)
+  const totalMin = entries.reduce((s,e)=>s+(e.dur||0),0);
+
+  // 背景:今天/選中色之外,有訂單依數量加深底色
+  let bg='';
+  if(isToday) bg='#E1F5EE';
+  else if(isSelected) bg='#F0FBF5';
+  else if(!otherMonth && !isOff && orderCount>0){
+    if(orderCount>=4) bg='#CCEDDE';
+    else if(orderCount>=2) bg='#E8F6EF';
+    else bg='#F5FBF8';
+  }
+
+  // 主視覺:訂單數(大字)+ 工時(小字)
+  let bodyHtml = '';
+  if(otherMonth){
+    bodyHtml = '';
+  } else if(isOff){
+    bodyHtml = `<div style="font-size:10px;color:#A87519;font-weight:600;margin-top:6px">公休</div>`;
+  } else if(orderCount>0){
+    const hours = Math.floor(totalMin/60);
+    const mins = totalMin%60;
+    const timeLabel = hours>0 ? `${hours}h${mins?mins+'m':''}` : `${mins}m`;
+    bodyHtml = `
+      <div style="display:flex;align-items:baseline;gap:4px;margin-top:4px">
+        <span style="font-size:18px;font-weight:700;color:var(--green-text);line-height:1">${orderCount}</span>
+        <span style="font-size:10px;color:var(--green-text);opacity:0.7">單</span>
+      </div>
+      <div style="font-size:10px;color:var(--text2);margin-top:1px">${timeLabel}</div>
+    `;
+  } else {
+    bodyHtml = `<div style="font-size:10px;color:var(--text3);margin-top:6px;opacity:0.6">—</div>`;
+  }
+
+  // 右下角:只在有員工請假時提示(全員到齊就不顯示)
+  let leaveBadge = '';
+  if(!otherMonth && !isOff){
+    const allStaff = appSettings.staff.map(s=>typeof s==='string'?s:s.name);
+    const offToday = allStaff.filter(n=>getShiftStatus(ds,n)==='off');
+    if(offToday.length>0 && offToday.length<allStaff.length){
+      leaveBadge = `<div style="position:absolute;bottom:3px;right:4px;font-size:9px;color:#A32D2D;background:#FCEBEB;padding:1px 5px;border-radius:8px;line-height:1.3" title="請假:${offToday.join('、')}">假${offToday.length}</div>`;
+    } else if(offToday.length===allStaff.length && allStaff.length>0){
+      leaveBadge = `<div style="position:absolute;bottom:3px;right:4px;font-size:9px;color:#A32D2D;background:#FCEBEB;padding:1px 5px;border-radius:8px;line-height:1.3">全休</div>`;
+    }
+  }
+
+  return`<div onclick="schedViewDate='${ds}';schedView='day';switchTodayView('day')" style="position:relative;border-right:0.5px solid var(--border);border-bottom:0.5px solid var(--border);min-height:78px;padding:5px 6px;cursor:pointer;background:${bg};${isSelected?'outline:2px solid var(--green);outline-offset:-2px':''}">
+    <div style="font-size:13px;font-weight:${isToday?'700':'500'};color:${isToday?'var(--green)':otherMonth?'var(--text3)':isOff?'var(--text3)':'var(--text)'}">${dayNum}</div>
+    ${bodyHtml}
+    ${leaveBadge}
   </div>`;
 }
 
@@ -2404,7 +2516,11 @@ function renderToday(){
     workItems.push({type:'sched',sched:e,order:anyOrder||null});
     if(anyOrder) mergedKeys.add(anyOrder.id);
   });
-  todayOrders.filter(o=>!mergedKeys.has(o.id)).forEach(o=>workItems.push({type:'order',order:o,sched:null}));
+  todayOrders.filter(o=>!mergedKeys.has(o.id)).forEach(o=>{
+    // v3.43: 即便排程那邊跳過渲染,也要把對應排程帶進來,讓時間/工時顯示正確
+    const matchSched=todaySched.find(e=>e.phone===o.phone&&e.plate===o.plate);
+    workItems.push({type:'order',order:o,sched:matchSched||null});
+  });
   workItems.sort((a,b)=>{const so={doing:0,pending:1,done:2,noshow:3};const sa=a.order?.status||'pending',sb=b.order?.status||'pending';if(so[sa]!==so[sb])return so[sa]-so[sb];const ta=a.sched?toMinutes(a.sched.start):999,tb=b.sched?toMinutes(b.sched.start):999;return ta-tb;});
   const inProgress=workItems.filter(w=>w.order?.status==='doing');
   const waiting=workItems.filter(w=>w.order?.status==='pending'||(!w.order&&w.sched));
@@ -2993,7 +3109,7 @@ function renderOrders(){
       if(!manualCollapsed.has(o.id)&&(o.status==='pending'||o.status==='doing'))
         expandedOrders.add(o.id);
     });
-    html+=`<div style="font-size:12px;font-weight:600;color:var(--text2);margin:12px 0 6px">今日 / 進行中（${activeList.length}）</div>`;
+    html+=`<div style="font-size:12px;font-weight:600;color:var(--text2);margin:12px 0 6px">今日 / 進行中與待處理（${activeList.length}）</div>`;
     html+=[...activeList].reverse().map(o=>buildOrderCard(o)).join('');
   }
 
@@ -3600,6 +3716,7 @@ function toggleShift(dateStr, staffName){
   const key=`shift:${dateStr}:${staffName}`;
   appSettings.shifts[key] = cur==='on'?'off':'on';
   renderShiftTable();
+  renderShiftCal();  // v3.42: 同步重畫下方月曆
 }
 
 function shiftPrevWeek(){ shiftWeekOffset--; renderShiftTable(); }
@@ -3700,6 +3817,7 @@ function renderShiftCal(){
 
 function saveShift(){
   saveSettings();
+  renderShiftCal();  // v3.42: 同步重畫下方月曆
   const msgEl=document.getElementById('shift-msg');
   if(msgEl) msgEl.innerHTML='<div class="msg msg-success">班表已儲存</div>';
   setTimeout(()=>{ if(msgEl) msgEl.innerHTML=''; },2000);
@@ -3709,6 +3827,48 @@ function getTodayOnStaff(){
   const today=todayStr();
   const staffNames=appSettings.staff.map(s=>typeof s==='string'?s:s.name);
   return staffNames.filter(n=>getShiftStatus(today,n)==='on');
+}
+
+// ═══ v3.42: 班表密碼鎖 (共用中控台密碼,session 解鎖) ═══
+let shiftUnlocked = false;
+
+function renderShiftScreen(){
+  // 如果中控台已解鎖,班表也視為解鎖(共用 session)
+  if(adminUnlocked) shiftUnlocked = true;
+  const lockEl = document.getElementById('shift-lock');
+  const contentEl = document.getElementById('shift-content');
+  if(!lockEl || !contentEl) return;
+  if(shiftUnlocked){
+    lockEl.style.display = 'none';
+    contentEl.style.display = 'block';
+    renderShiftTable();
+    renderShiftCal();
+  } else {
+    lockEl.style.display = 'flex';
+    contentEl.style.display = 'none';
+    setTimeout(()=>document.getElementById('shift-pwd-input')?.focus(), 100);
+  }
+}
+
+function shiftLogin(){
+  const pwd = document.getElementById('shift-pwd-input')?.value || '';
+  const msg = document.getElementById('shift-pwd-msg');
+  if(pwd === appSettings.adminPwd){
+    shiftUnlocked = true;
+    adminUnlocked = true;  // 班表進去也視同中控台解鎖
+    document.getElementById('shift-pwd-input').value = '';
+    if(msg) msg.textContent = '';
+    renderShiftScreen();
+  } else {
+    if(msg) msg.textContent = '密碼錯誤,請再試一次';
+    document.getElementById('shift-pwd-input')?.select();
+  }
+}
+
+function shiftLogout(){
+  shiftUnlocked = false;
+  adminUnlocked = false;  // 兩個一起鎖
+  renderShiftScreen();
 }
 
 
@@ -3733,6 +3893,7 @@ function adminLogin(){
   const msg=document.getElementById('admin-pwd-msg');
   if(pwd===appSettings.adminPwd){
     adminUnlocked=true;
+    shiftUnlocked=true;  // v3.42: 中控台解鎖同時也解鎖班表
     document.getElementById('admin-pwd-input').value='';
     if(msg) msg.textContent='';
     renderAdminScreen();
@@ -3744,6 +3905,7 @@ function adminLogin(){
 
 function adminLogout(){
   adminUnlocked=false;
+  shiftUnlocked=false;  // v3.42: 中控台上鎖同時也鎖班表
   renderAdminScreen();
 }
 
@@ -3791,38 +3953,9 @@ function showAdminSection(section){
       <span id="expense-filter-month" style="display:none"></span>`;
     renderInventory();
   } else if(section==='shift'){
-    content.innerHTML=`
-      <div style="padding:16px 18px">
-        <div style="font-size:11px;font-weight:700;color:var(--text3);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:12px">班表管理</div>
-        <div class="card" style="padding:0;overflow:hidden">
-          <div style="padding:10px 14px;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
-            <div style="font-size:12px;color:var(--text2)">週一固定公休 · 點格子切換出勤</div>
-            <div style="display:flex;gap:6px;align-items:center">
-              <button onclick="shiftPrevWeek();renderShiftTable()" style="padding:4px 10px;border:1px solid var(--border2);border-radius:var(--radius);background:none;cursor:pointer;font-size:13px">‹</button>
-              <span id="shift-week-label" style="font-size:13px;font-weight:500"></span>
-              <button onclick="shiftNextWeek();renderShiftTable()" style="padding:4px 10px;border:1px solid var(--border2);border-radius:var(--radius);background:none;cursor:pointer;font-size:13px">›</button>
-            </div>
-          </div>
-          <div id="shift-table-admin" style="overflow-x:auto"></div>
-          <div style="padding:10px 14px;border-top:1px solid var(--border)">
-            <button class="btn primary block" onclick="saveShift()">儲存班表</button>
-            <div id="shift-msg" style="margin-top:6px"></div>
-          </div>
-        </div>
-
-        <!-- 簡易月曆 -->
-        <div style="font-size:11px;font-weight:700;color:var(--text3);letter-spacing:0.06em;text-transform:uppercase;margin:20px 0 10px">本月出勤總覽</div>
-        <div class="card" style="padding:0;overflow:hidden">
-          <div id="shift-cal-nav" style="padding:10px 14px;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
-            <button onclick="shiftCalPrev()" style="padding:4px 10px;border:1px solid var(--border2);border-radius:var(--radius);background:none;cursor:pointer;font-size:13px">‹</button>
-            <span id="shift-cal-label" style="font-size:13px;font-weight:700"></span>
-            <button onclick="shiftCalNext()" style="padding:4px 10px;border:1px solid var(--border2);border-radius:var(--radius);background:none;cursor:pointer;font-size:13px">›</button>
-          </div>
-          <div id="shift-cal-grid"></div>
-        </div>
-      </div>`;
-    renderShiftTable();
-    renderShiftCal();
+    // v3.41: 班表已獨立為頂層 Tab,中控台舊路徑直接跳轉過去
+    switchTab('shift');
+    return;
   } else if(section==='settings'){
     // 直接顯示 screen-settings 的內容
     const orig=document.getElementById('screen-settings');
