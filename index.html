@@ -228,7 +228,7 @@ textarea{resize:vertical;min-height:72px}
     <div class="tab" onclick="switchTab('shift')">班表</div>
     <div class="tab" onclick="switchTab('admin')">中控台</div>
     <div style="margin-left:auto;padding:0 12px;display:flex;align-items:center;flex-shrink:0">
-      <span style="font-size:10px;font-weight:600;color:rgba(255,255,255,0.35);letter-spacing:0.04em">v3.50</span>
+      <span style="font-size:10px;font-weight:600;color:rgba(255,255,255,0.35);letter-spacing:0.04em">v3.51</span>
     </div>
   </div>
 
@@ -780,6 +780,12 @@ textarea{resize:vertical;min-height:72px}
           <div style="font-size:12px;color:var(--text2);margin-bottom:8px">檢查訂單與排程資料是否一致（找出孤兒排程、配對失敗等問題）</div>
           <button class="btn block" style="margin-bottom:8px" onclick="diagnoseData()">🔍 執行資料診斷</button>
           <div id="diag-result" style="font-family:monospace;font-size:11px;line-height:1.5;background:#1a1a1a;color:#fff;padding:10px;border-radius:6px;max-height:300px;overflow-y:auto;white-space:pre-wrap;display:none"></div>
+
+          <div class="divider"></div>
+          <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:8px">🩺 異常訂單健診</div>
+          <div style="font-size:12px;color:var(--text2);margin-bottom:8px">找出「空 service / 0 元 / 缺欄位」的舊訂單(v3.49 前可能殘留)。UI 已隱藏，但儀表板統計會算進去。</div>
+          <button class="btn block" style="margin-bottom:8px" onclick="scanGhostOrders()">🩺 掃描異常訂單</button>
+          <div id="ghost-result" style="display:none;margin-top:8px"></div>
 
           <div class="divider"></div>
           <div style="font-size:12px;color:#A32D2D;margin-bottom:8px;font-weight:600">⚠️ 危險操作</div>
@@ -3913,6 +3919,177 @@ function diagnoseData(){
   });
 
   out.textContent=lines.join('\n');
+}
+
+// ═══ v3.51: 異常訂單健診 ═══
+// 找出 service 空白 / 0 元 / 缺欄位的殘留訂單(v3.49 前可能建出)
+function _isGhostOrder(o){
+  if(!o) return false;
+  const svc=(o.service||'').trim();
+  // 規則:service 為空、或標記為「待補填」、或金額異常
+  if(!svc) return true;
+  if(svc==='待補填') return true;
+  if(typeof o.price!=='number'||isNaN(o.price)||o.price<0) return true;
+  // price===0 且非取消/爽約 → 也算異常(免費單應該有明確 service)
+  if(o.price===0 && o.status!=='cancelled' && o.status!=='noshow' && !svc) return true;
+  return false;
+}
+
+function scanGhostOrders(){
+  const out=document.getElementById('ghost-result');
+  if(!out) return;
+  const ghosts=db.orders.filter(_isGhostOrder);
+  // 日期倒序(新的在上)
+  ghosts.sort((a,b)=>(b.created||'').localeCompare(a.created||''));
+
+  if(!ghosts.length){
+    out.style.display='block';
+    out.innerHTML=`<div style="padding:14px;background:#e8f5e9;border:1px solid #a5d6a7;border-radius:6px;color:#1b5e20;font-size:13px">✅ 沒有異常訂單,資料乾淨。</div>`;
+    return;
+  }
+
+  // 統計影響金額(計入儀表板的部分:status===done)
+  const doneGhosts=ghosts.filter(o=>o.status==='done');
+  const ghostRevenue=doneGhosts.reduce((s,o)=>s+(Number(o.price)||0),0);
+
+  const rows=ghosts.map(o=>{
+    const c=findCustomer(o.phone);
+    const name=c?.name||'(找不到客戶)';
+    const svcDisplay=(o.service||'').trim()||'<span style="color:#A32D2D">(空)</span>';
+    const priceDisplay=(typeof o.price==='number'&&o.price>=0)?'$'+o.price.toLocaleString():'<span style="color:#A32D2D">'+JSON.stringify(o.price)+'</span>';
+    return `<tr style="border-bottom:1px solid var(--border)">
+      <td style="padding:6px 4px;font-size:11px;color:var(--text2);white-space:nowrap">${(o.created||'').slice(0,10)}</td>
+      <td style="padding:6px 4px;font-size:11px;white-space:nowrap">${o.plate||'<span style="color:#A32D2D">(無)</span>'}</td>
+      <td style="padding:6px 4px;font-size:11px">${name}<br><span style="color:var(--text3);font-size:10px">${o.phone||''}</span></td>
+      <td style="padding:6px 4px;font-size:11px;white-space:nowrap"><span class="badge badge-${o.status}">${STATUS_LABEL[o.status]||o.status}</span></td>
+      <td style="padding:6px 4px;font-size:11px">${svcDisplay}</td>
+      <td style="padding:6px 4px;font-size:11px;white-space:nowrap;text-align:right">${priceDisplay}</td>
+      <td style="padding:6px 4px;white-space:nowrap"><button class="btn" style="font-size:11px;padding:4px 8px;color:#A32D2D;border-color:#A32D2D" onclick="deleteGhostOrder('${o.id}')">🗑</button></td>
+    </tr>`;
+  }).join('');
+
+  out.style.display='block';
+  out.innerHTML=`
+    <div style="padding:10px;background:#fff3e0;border:1px solid #ffcc80;border-radius:6px;margin-bottom:8px;font-size:12px">
+      <div style="font-weight:600;color:#A32D2D;margin-bottom:4px">⚠️ 找到 ${ghosts.length} 筆異常訂單</div>
+      <div style="color:var(--text2)">其中 ${doneGhosts.length} 筆狀態為「完成」,合計 $${ghostRevenue.toLocaleString()} 會被儀表板算進去。</div>
+    </div>
+    <div style="max-height:340px;overflow-y:auto;border:1px solid var(--border);border-radius:6px">
+      <table style="width:100%;border-collapse:collapse;background:var(--bg)">
+        <thead style="position:sticky;top:0;background:var(--bg2);z-index:1">
+          <tr style="border-bottom:1.5px solid var(--border2)">
+            <th style="padding:8px 4px;font-size:11px;text-align:left;color:var(--text2)">日期</th>
+            <th style="padding:8px 4px;font-size:11px;text-align:left;color:var(--text2)">車牌</th>
+            <th style="padding:8px 4px;font-size:11px;text-align:left;color:var(--text2)">客戶</th>
+            <th style="padding:8px 4px;font-size:11px;text-align:left;color:var(--text2)">狀態</th>
+            <th style="padding:8px 4px;font-size:11px;text-align:left;color:var(--text2)">服務</th>
+            <th style="padding:8px 4px;font-size:11px;text-align:right;color:var(--text2)">金額</th>
+            <th style="padding:8px 4px;font-size:11px;text-align:left;color:var(--text2)"></th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+      <button class="btn" style="flex:1;min-width:120px;font-size:12px" onclick="copyGhostList()">📋 複製清單</button>
+      <button class="btn" style="flex:1;min-width:120px;font-size:12px;color:#A32D2D;border-color:#A32D2D" onclick="deleteAllGhosts()">🗑 全部刪除</button>
+    </div>
+    <div style="font-size:11px;color:var(--text3);margin-top:8px">💡 刪除前建議先「複製清單」貼到記事本留底,或先「📦 匯出全部資料」做完整備份。</div>
+  `;
+}
+
+function deleteGhostOrder(id){
+  const o=db.orders.find(x=>x.id===id);
+  if(!o){ showToast('找不到該訂單'); return; }
+  const c=findCustomer(o.phone);
+  const svcDisplay=(o.service||'').trim()||'(空)';
+  // 提示:有錢包扣款的話告知會退款
+  const hasWalletRefund=o.deducted&&o.payment==='wallet'&&o.price>0;
+  const refundNote=hasWalletRefund?`\n\n⚠️ 此訂單曾從錢包扣款 $${o.price.toLocaleString()},刪除後會自動退回。`:'';
+  askConfirm({
+    title:'刪除這筆異常訂單?',
+    body:`${o.plate||'(無車牌)'} — ${svcDisplay}\n${c?.name||'(找不到客戶)'} / ${o.phone||''}\n${(o.created||'').slice(0,10)} / ${STATUS_LABEL[o.status]||o.status} / $${(Number(o.price)||0).toLocaleString()}${refundNote}\n\n此動作無法復原。`,
+    okText:'確定刪除',
+    okStyle:'red'
+  },()=>{
+    // 對齊 approveDelete: 若有錢包扣款則退款
+    if(hasWalletRefund){
+      const w=getWallet(o.phone);
+      w.balance+=o.price;
+      w.txns.push({type:'topup',amount:o.price,note:`退款（健診刪除訂單 ${o.id}）`,date:nowStr(),balance:totalBalance(w)});
+    }
+    db.orders=db.orders.filter(x=>x.id!==id);
+    scheduleSave();
+    showToast('已刪除異常訂單',{duration:1200});
+    scanGhostOrders(); // 重掃刷新列表
+  });
+}
+
+function deleteAllGhosts(){
+  const ghosts=db.orders.filter(_isGhostOrder);
+  if(!ghosts.length){ showToast('沒有可刪除的異常訂單'); return; }
+  const doneCount=ghosts.filter(o=>o.status==='done').length;
+  // 檢查是否有錢包退款情況
+  const walletRefunds=ghosts.filter(o=>o.deducted&&o.payment==='wallet'&&o.price>0);
+  const refundNote=walletRefunds.length?`\n\n⚠️ 其中 ${walletRefunds.length} 筆曾從錢包扣款,合計 $${walletRefunds.reduce((s,o)=>s+o.price,0).toLocaleString()} 會自動退回。`:'';
+  askConfirm({
+    title:`確定刪除全部 ${ghosts.length} 筆異常訂單?`,
+    body:`其中 ${doneCount} 筆是已完成訂單,刪除後儀表板數字會跟著降。${refundNote}\n\n建議先「📋 複製清單」或「📦 匯出全部資料」備份。\n此動作無法復原。`,
+    okText:`全部刪除 (${ghosts.length})`,
+    okStyle:'red'
+  },()=>{
+    // 對齊 approveDelete: 退款處理
+    walletRefunds.forEach(o=>{
+      const w=getWallet(o.phone);
+      w.balance+=o.price;
+      w.txns.push({type:'topup',amount:o.price,note:`退款（健診批量刪除訂單 ${o.id}）`,date:nowStr(),balance:totalBalance(w)});
+    });
+    const ids=new Set(ghosts.map(o=>o.id));
+    db.orders=db.orders.filter(o=>!ids.has(o.id));
+    saveDb(); // 批量刪除:立即落盤,不走 debounce
+    showToast(`已刪除 ${ghosts.length} 筆異常訂單`,{duration:1500});
+    scanGhostOrders();
+  });
+}
+
+function copyGhostList(){
+  const ghosts=db.orders.filter(_isGhostOrder);
+  ghosts.sort((a,b)=>(b.created||'').localeCompare(a.created||''));
+  if(!ghosts.length){ showToast('沒有異常訂單可複製'); return; }
+  const header='日期\t車牌\t客戶\t電話\t狀態\t服務\t金額\tID';
+  const lines=ghosts.map(o=>{
+    const c=findCustomer(o.phone);
+    return [
+      (o.created||'').slice(0,10),
+      o.plate||'(無)',
+      c?.name||'(找不到)',
+      o.phone||'',
+      STATUS_LABEL[o.status]||o.status,
+      (o.service||'').trim()||'(空)',
+      typeof o.price==='number'?o.price:JSON.stringify(o.price),
+      o.id
+    ].join('\t');
+  });
+  const text=[header,...lines].join('\n');
+  // 嘗試使用 Clipboard API,失敗則退回 textarea
+  const fallback=()=>{
+    const ta=document.createElement('textarea');
+    ta.value=text;
+    ta.style.position='fixed';ta.style.opacity='0';
+    document.body.appendChild(ta);
+    ta.select();
+    try{ document.execCommand('copy'); showToast('已複製到剪貼簿',{duration:1200}); }
+    catch(_){ showToast('複製失敗,請手動選取',{duration:1500}); }
+    document.body.removeChild(ta);
+  };
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(
+      ()=>showToast('已複製到剪貼簿',{duration:1200}),
+      fallback
+    );
+  } else {
+    fallback();
+  }
 }
 
 function clearAllData(){
