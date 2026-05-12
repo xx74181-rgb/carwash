@@ -227,7 +227,7 @@ textarea{resize:vertical;min-height:72px}
     <div class="tab" onclick="switchTab('orders')">訂單紀錄</div>
     <div class="tab" onclick="switchTab('admin')">中控台</div>
     <div style="margin-left:auto;padding:0 12px;display:flex;align-items:center;flex-shrink:0">
-      <span style="font-size:10px;font-weight:600;color:rgba(255,255,255,0.35);letter-spacing:0.04em">v3.36</span>
+      <span style="font-size:10px;font-weight:600;color:rgba(255,255,255,0.35);letter-spacing:0.04em">v3.37</span>
     </div>
   </div>
 
@@ -2391,16 +2391,16 @@ function renderToday(){
   const mergedKeys=new Set(),workItems=[];
   const activeSched=todaySched.filter(e=>{const es=toMinutes(e.start);return es+e.dur>nowM;}).sort((a,b)=>toMinutes(a.start)-toMinutes(b.start));
   activeSched.forEach(e=>{
-    const matchOrder=todayOrders.find(o=>o.plate===e.plate&&o.status!=='done'&&o.status!=='cancelled');
-    // 同一個訂單已經被前一個排程拿走 → 跳過避免重複卡
-    if(matchOrder && mergedKeys.has(matchOrder.id)) return;
-    // 訂單爽約/取消 → 不要顯示這個排程（避免「爽約 ×2」幽靈卡）
-    if(matchOrder && (matchOrder.status==='noshow'||matchOrder.status==='cancelled')){
-      mergedKeys.add(matchOrder.id);
-      return;
+    // 找對應訂單
+    const anyOrder=todayOrders.find(o=>o.plate===e.plate);
+    // 訂單已完成/取消/爽約 → 排程不再渲染（讓訂單那邊獨立 push 一張卡）
+    if(anyOrder && (anyOrder.status==='done'||anyOrder.status==='cancelled'||anyOrder.status==='noshow')){
+      return;  // 注意：不加 mergedKeys，讓訂單那邊正常 push
     }
-    workItems.push({type:'sched',sched:e,order:matchOrder||null});
-    if(matchOrder) mergedKeys.add(matchOrder.id);
+    // 同一個訂單已經被前一個排程拿走 → 跳過避免重複卡
+    if(anyOrder && mergedKeys.has(anyOrder.id)) return;
+    workItems.push({type:'sched',sched:e,order:anyOrder||null});
+    if(anyOrder) mergedKeys.add(anyOrder.id);
   });
   todayOrders.filter(o=>!mergedKeys.has(o.id)).forEach(o=>workItems.push({type:'order',order:o,sched:null}));
   workItems.sort((a,b)=>{const so={doing:0,pending:1,done:2,noshow:3};const sa=a.order?.status||'pending',sb=b.order?.status||'pending';if(so[sa]!==so[sb])return so[sa]-so[sb];const ta=a.sched?toMinutes(a.sched.start):999,tb=b.sched?toMinutes(b.sched.start):999;return ta-tb;});
