@@ -228,7 +228,7 @@ textarea{resize:vertical;min-height:72px}
     <div class="tab" onclick="switchTab('shift')">班表</div>
     <div class="tab" onclick="switchTab('admin')">中控台</div>
     <div style="margin-left:auto;padding:0 12px;display:flex;align-items:center;flex-shrink:0">
-      <span style="font-size:10px;font-weight:600;color:rgba(255,255,255,0.35);letter-spacing:0.04em">v3.44</span>
+      <span style="font-size:10px;font-weight:600;color:rgba(255,255,255,0.35);letter-spacing:0.04em">v3.50</span>
     </div>
   </div>
 
@@ -817,6 +817,16 @@ textarea{resize:vertical;min-height:72px}
   <button class="btn block" style="margin-top:8px;color:var(--text3)" onclick="closeStaffConfirm()">取消</button>
 </div>
 
+<!-- v3.48: 通用確認 sheet(取代 iPad Safari 上不穩定的 native confirm() 用) -->
+<div id="gc-overlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.4);z-index:70" onclick="gcCancel()"></div>
+<div id="gc-sheet" style="display:none;position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:560px;background:var(--bg);border-radius:20px 20px 0 0;z-index:71;padding:20px 18px 32px">
+  <div style="width:36px;height:4px;background:var(--border2);border-radius:2px;margin:0 auto 16px"></div>
+  <div id="gc-title" style="font-size:17px;font-weight:700;margin-bottom:8px"></div>
+  <div id="gc-body" style="font-size:14px;color:var(--text2);margin-bottom:18px;line-height:1.6;white-space:pre-wrap"></div>
+  <button id="gc-ok" class="btn primary block" style="min-height:54px;font-size:16px;padding:14px" onclick="gcConfirm()">確定</button>
+  <button class="btn block" style="margin-top:10px;color:var(--text3)" onclick="gcCancel()">取消</button>
+</div>
+
 <!-- 預約客戶快速建檔 sheet -->
 <div id="walkin-overlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.4);z-index:60" onclick="closeWalkInSheet()"></div>
 <div id="walkin-sheet" style="display:none;position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:560px;background:var(--bg);border-radius:20px 20px 0 0;z-index:61;padding:20px 18px 32px">
@@ -844,6 +854,41 @@ textarea{resize:vertical;min-height:72px}
   <div id="walkin-msg" style="font-size:13px;color:#A32D2D;margin-bottom:10px;min-height:18px"></div>
   <button class="btn primary block" style="font-size:15px;padding:14px" onclick="confirmWalkIn()">建立並選擇此客戶</button>
   <button class="btn block" style="margin-top:8px;color:var(--text3)" onclick="closeWalkInSheet()">取消</button>
+</div>
+
+<!-- v3.46: 申請刪除確認 sheet(取代 iPad Safari 上不穩定的 native confirm()) -->
+<div id="del-req-overlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.4);z-index:60" onclick="closeDelReqSheet()"></div>
+<div id="del-req-sheet" style="display:none;position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:560px;background:var(--bg);border-radius:20px 20px 0 0;z-index:61;padding:20px 18px 32px">
+  <div style="width:36px;height:4px;background:var(--border2);border-radius:2px;margin:0 auto 16px"></div>
+  <div style="font-size:17px;font-weight:700;margin-bottom:4px;color:#A32D2D">🗑 申請刪除此訂單?</div>
+  <div id="del-req-info" style="font-size:14px;color:var(--text);margin-bottom:8px;line-height:1.6"></div>
+  <div style="font-size:12px;color:var(--text2);margin-bottom:18px;padding:10px;background:#FFF5F5;border-radius:8px;border-left:3px solid #E24B4A">訂單將標記為「待審核刪除」,需店長密碼確認才會真正刪除。</div>
+  <button class="btn primary block" style="min-height:54px;font-size:16px;padding:14px;background:#A32D2D;color:#fff" onclick="confirmRequestDelete()">確定申請</button>
+  <button class="btn block" style="margin-top:10px;color:var(--text3)" onclick="closeDelReqSheet()">取消</button>
+</div>
+
+<!-- v3.50: 清除所有資料 sheet(取代 prompt + 兩段 confirm) -->
+<div id="cad-overlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.4);z-index:70" onclick="closeClearAllSheet()"></div>
+<div id="cad-sheet" style="display:none;position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:560px;background:var(--bg);border-radius:20px 20px 0 0;z-index:71;padding:20px 18px 32px">
+  <div style="width:36px;height:4px;background:var(--border2);border-radius:2px;margin:0 auto 16px"></div>
+  <div style="font-size:17px;font-weight:700;margin-bottom:8px;color:#A32D2D">⚠️ 清除所有資料</div>
+  <div style="font-size:14px;color:var(--text);margin-bottom:12px;line-height:1.6">將永久刪除全部:<br>・客戶資料<br>・訂單記錄<br>・排程記錄<br>・錢包/推薦記錄<br><br><strong style="color:#A32D2D">此操作無法復原。</strong></div>
+  <div style="font-size:13px;color:var(--text2);margin-bottom:8px">請輸入店長密碼確認:</div>
+  <input id="cad-pwd" type="password" placeholder="店長密碼" maxlength="10" style="width:100%;padding:12px;border:1.5px solid #E24B4A;border-radius:var(--radius);font-size:15px;font-family:inherit;margin-bottom:6px" onkeydown="if(event.key==='Enter')confirmClearAll()" />
+  <div id="cad-msg" style="font-size:12px;color:#A32D2D;margin-bottom:14px;min-height:16px"></div>
+  <button class="btn primary block" style="min-height:54px;font-size:16px;padding:14px;background:#A32D2D;color:#fff" onclick="confirmClearAll()">🔥 確定清除所有資料</button>
+  <button class="btn block" style="margin-top:10px;color:var(--text3)" onclick="closeClearAllSheet()">取消</button>
+</div>
+
+<!-- v3.50: 自訂等待分鐘 sheet(取代 prompt) -->
+<div id="wait-overlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.4);z-index:70" onclick="closeWaitSheet()"></div>
+<div id="wait-sheet" style="display:none;position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:560px;background:var(--bg);border-radius:20px 20px 0 0;z-index:71;padding:20px 18px 32px">
+  <div style="width:36px;height:4px;background:var(--border2);border-radius:2px;margin:0 auto 16px"></div>
+  <div style="font-size:17px;font-weight:700;margin-bottom:12px">⏳ 幾分鐘後開始?</div>
+  <input id="wait-mins" type="number" inputmode="numeric" placeholder="輸入分鐘數" min="1" max="600" style="width:100%;padding:14px;border:1.5px solid var(--border2);border-radius:var(--radius);font-size:18px;font-family:inherit;margin-bottom:6px;text-align:center" onkeydown="if(event.key==='Enter')confirmWaitMins()" />
+  <div id="wait-msg" style="font-size:12px;color:#A32D2D;margin-bottom:14px;min-height:16px"></div>
+  <button class="btn primary block" style="min-height:54px;font-size:16px;padding:14px" onclick="confirmWaitMins()">確定</button>
+  <button class="btn block" style="margin-top:10px;color:var(--text3)" onclick="closeWaitSheet()">取消</button>
 </div>
 
 <!-- 補填訂單資料 sheet -->
@@ -1918,13 +1963,37 @@ function setApptTime(timeStr){
 }
 
 function pickWaitMinutes(min){
-  let waitMin=min;
   if(min==='custom'){
-    const v=prompt('幾分鐘後開始？（輸入數字）','45');
-    if(v===null) return;
-    waitMin=parseInt(v);
-    if(!waitMin||waitMin<=0){ alert('請輸入有效的分鐘數'); return; }
+    // v3.50: 開 sheet 取代 prompt(iPad 上不穩)
+    const inp=document.getElementById('wait-mins');
+    const msg=document.getElementById('wait-msg');
+    if(inp) inp.value='';
+    if(msg) msg.textContent='';
+    document.getElementById('wait-overlay').style.display='block';
+    document.getElementById('wait-sheet').style.display='block';
+    setTimeout(()=>inp?.focus(),100);
+    return;
   }
+  applyWaitMinutes(min);
+}
+
+function closeWaitSheet(){
+  document.getElementById('wait-overlay').style.display='none';
+  document.getElementById('wait-sheet').style.display='none';
+}
+
+function confirmWaitMins(){
+  const v=parseInt(document.getElementById('wait-mins')?.value);
+  const msg=document.getElementById('wait-msg');
+  if(!v||v<=0){
+    if(msg) msg.textContent='請輸入有效的分鐘數';
+    return;
+  }
+  closeWaitSheet();
+  applyWaitMinutes(v);
+}
+
+function applyWaitMinutes(waitMin){
   const d=new Date();
   let mins=d.getHours()*60+d.getMinutes()+waitMin;
   mins=Math.round(mins/5)*5;  // snap 5 分
@@ -1935,13 +2004,13 @@ function pickWaitMinutes(min){
   setApptTime(timeStr);
   // 視覺：wait-btn selected
   document.querySelectorAll('.wait-btn').forEach(b=>b.classList.remove('selected'));
-  if(typeof min==='number'){
-    // 找對應按鈕並標記
+  // 找對應預設按鈕(15/30/60)並標記;若是自訂分鐘則標記最後一顆「自訂」按鈕
+  const preset=[15,30,60].includes(waitMin);
+  if(preset){
     document.querySelectorAll('.wait-btn').forEach(b=>{
-      if(b.textContent.trim().startsWith(String(min))) b.classList.add('selected');
+      if(b.textContent.trim().startsWith(String(waitMin))) b.classList.add('selected');
     });
   } else {
-    // 自訂的話標記最後一顆
     const btns=document.querySelectorAll('.wait-btn');
     if(btns.length) btns[btns.length-1].classList.add('selected');
   }
@@ -2032,8 +2101,21 @@ function quickSelectService(s){ document.querySelectorAll('#service-chips .chip'
 function createOrder(){
   const msgEl=document.getElementById('order-msg');
   if(!orderState.phone){msgEl.innerHTML='<div class="msg msg-error">請先查詢並選擇客戶</div>';return;}
+  // v3.49: 補上缺料驗證 — 之前沒選服務也能送單,造成工作時程出現「待補填」幽靈卡 + 重複「開單→」按鈕
+  if(!orderState.service){
+    showToast('⚠️ 請至少選擇一項服務',{duration:2200});
+    return;
+  }
+  if(!orderState.plate){
+    showToast('⚠️ 請選擇車輛',{duration:2200});
+    return;
+  }
   const price=parseInt(document.getElementById('order-price').value)||0;
   const time=parseInt(document.getElementById('order-time').value)||0;
+  if(time<=0){
+    showToast('⚠️ 請填寫總工時(分鐘)',{duration:2200});
+    return;
+  }
   const note=document.getElementById('order-note').value.trim();
   const payment=orderState.payment||null;
   const apptDate=document.getElementById('order-appt-date').value;
@@ -2111,12 +2193,35 @@ function buildTodayTimeline(orders, schedEntries, nowM){
   // 優先用排程資料，沒有排程用訂單 created 時間 fallback
   let slots=[];
   if(schedEntries&&schedEntries.length){
+    // v3.47: 配對訂單必須是「同電話+同車牌+今天」,並優先選 pending/doing(避免抓到當日已 done 的舊單)
+    const today=todayStr();
+    const matchOrd=(e)=>{
+      const candidates=db.orders.filter(ord=>{
+        if(ord.phone!==e.phone) return false;
+        if(e.plate&&ord.plate!==e.plate) return false;
+        const ordDate=(ord.appt&&ord.appt.slice(0,10))||(ord.created&&ord.created.slice(0,10));
+        return ordDate===today;
+      });
+      // 優先 pending/doing,沒有再退而求其次
+      return candidates.find(o=>o.status==='pending'||o.status==='doing')||candidates[0];
+    };
     slots=schedEntries.map(e=>{
       const startMin=toMinutes(e.start||'09:00');
       const dur=e.dur||60;
-      const o=db.orders.find(ord=>ord.phone===e.phone&&(ord.plate===e.plate||!e.plate));
+      const o=matchOrd(e);
       return{e,o,startMin,dur};
-    }).filter(s=>s.startMin>=startMins&&s.startMin<HOUR_END*60);
+    }).filter(s=>s.startMin>=startMins&&s.startMin<HOUR_END*60)
+      // v3.49: 過濾殘留 sched — 沒對應到 order,但同電話+同車牌今日已有訂單,代表是建單時跨日切割的殘留,不該顯示
+      .filter(s=>{
+        if(s.o) return true;
+        if(!s.e?.phone||!s.e?.plate) return true;
+        const dupExists=db.orders.some(ord=>{
+          if(ord.phone!==s.e.phone||ord.plate!==s.e.plate) return false;
+          const ordDate=(ord.appt&&ord.appt.slice(0,10))||(ord.created&&ord.created.slice(0,10));
+          return ordDate===todayStr();
+        });
+        return !dupExists;
+      });
   }
   if(!slots.length){
     slots=orders.filter(o=>o.status!=='noshow'&&o.status!=='cancelled').map(o=>{
@@ -2341,7 +2446,18 @@ function renderDayViewInToday(){
     </div>
   `;
   // 重用 renderDay 的核心邏輯
-  const entries=(db.schedule||[]).filter(e=>e.date===schedViewDate);
+  // v3.49: 同電話+同車牌+同日已有正式訂單的「待補填」殘留 sched 不顯示(可能來自舊版開單時 service 留空的情況)
+  const entries=(db.schedule||[]).filter(e=>{
+    if(e.date!==schedViewDate) return false;
+    if(!e.phone||!e.plate) return true;
+    const hasOrder=(db.orders||[]).some(o=>{
+      if(o.phone!==e.phone||o.plate!==e.plate) return false;
+      const ordDate=(o.appt&&o.appt.slice(0,10))||(o.created&&o.created.slice(0,10));
+      return ordDate===schedViewDate;
+    });
+    // 有對應訂單就保留;沒有但「待補填」表示是殘留,隱藏
+    return hasOrder||e.service!=='待補填';
+  });
   const timelineEl=document.getElementById('today-day-timeline');
   if(!timelineEl)return;
   if(!entries.length){
@@ -2369,8 +2485,14 @@ function renderDayViewInToday(){
     const topPx=(es-startMins)*PX;
     const hPx=Math.max(e.dur*PX,32);
     const cu=findCustomer(e.phone);
-    const o=db.orders.find(ord=>ord.phone===e.phone&&ord.plate===e.plate)
-          ||db.orders.filter(ord=>ord.phone===e.phone).sort((a,b)=>b.created>a.created?1:-1)[0];
+    // v3.47: 配對訂單必須是「同電話+同車牌+同日期」,並優先選 pending/doing(避免抓到當日已 done 的舊單)
+    const schedDate=schedViewDate||todayStr();
+    const _candidates=db.orders.filter(ord=>{
+      if(ord.phone!==e.phone||ord.plate!==e.plate) return false;
+      const ordDate=(ord.appt&&ord.appt.slice(0,10))||(ord.created&&ord.created.slice(0,10));
+      return ordDate===schedDate;
+    });
+    const o=_candidates.find(c=>c.status==='pending'||c.status==='doing')||_candidates[0];
     const status=o?.status||'pending';
     const isDone=status==='done'||status==='cancelled'||status==='noshow';
     const bgColor=isDone?'#EBEBEB':'#E1F5EE';
@@ -2514,6 +2636,11 @@ function renderToday(){
     }
     // 同一個訂單已經被前一個排程拿走 → 跳過避免重複卡
     if(anyOrder && mergedKeys.has(anyOrder.id)) return;
+    // v3.49: 沒對應訂單但同電話+同車牌今日已有訂單 → 是殘留 schedule,忽略避免顯示「開單→」誘導重複建單
+    if(!anyOrder && e.phone && e.plate){
+      const dupExists=todayOrders.some(o=>o.phone===e.phone&&o.plate===e.plate);
+      if(dupExists) return;
+    }
     workItems.push({type:'sched',sched:e,order:anyOrder||null});
     if(anyOrder) mergedKeys.add(anyOrder.id);
   });
@@ -2903,15 +3030,58 @@ function saveQuickNote(id){
   renderToday();
 }
 
+// v3.48: 通用確認 sheet,取代 iPad 上不穩的 native confirm()
+// 用法:askConfirm({title:'...', body:'...', okText:'確定', okStyle:'red'}, ()=>{ /* 確認後執行 */ });
+let _gcCallback=null;
+function askConfirm(opts,onConfirm){
+  _gcCallback=onConfirm||null;
+  const titleEl=document.getElementById('gc-title');
+  const bodyEl=document.getElementById('gc-body');
+  const okBtn=document.getElementById('gc-ok');
+  if(titleEl) titleEl.textContent=opts.title||'確認';
+  if(bodyEl) bodyEl.textContent=opts.body||'';
+  if(okBtn){
+    okBtn.textContent=opts.okText||'確定';
+    // 紅色樣式(刪除類動作)
+    if(opts.okStyle==='red'){
+      okBtn.style.background='#A32D2D';
+      okBtn.style.color='#fff';
+    } else {
+      okBtn.style.background='';
+      okBtn.style.color='';
+    }
+  }
+  document.getElementById('gc-overlay').style.display='block';
+  document.getElementById('gc-sheet').style.display='block';
+}
+function gcCancel(){
+  _gcCallback=null;
+  document.getElementById('gc-overlay').style.display='none';
+  document.getElementById('gc-sheet').style.display='none';
+}
+function gcConfirm(){
+  const cb=_gcCallback;
+  _gcCallback=null;
+  document.getElementById('gc-overlay').style.display='none';
+  document.getElementById('gc-sheet').style.display='none';
+  if(cb) cb();
+}
+
 function cancelOrder(id){
   const o=db.orders.find(o=>o.id===id);if(!o)return;
   const c=findCustomer(o.phone);
-  if(!confirm(`取消此訂單？\n${o.plate} — ${o.service}\n${c?(c.name||'未填姓名'):o.phone}\n\n訂單將保留，可隨時復原`))return;
-  o.status='cancelled';
-  o.cancelledAt=nowStr();
-  scheduleSave();
-  renderToday();
-  renderOrders();
+  askConfirm({
+    title:'取消此訂單?',
+    body:`${o.plate} — ${o.service}\n${c?(c.name||'未填姓名'):o.phone}\n\n訂單將保留,可隨時復原。`,
+    okText:'確定取消',
+    okStyle:'red'
+  },()=>{
+    o.status='cancelled';
+    o.cancelledAt=nowStr();
+    scheduleSave();
+    renderToday();
+    renderOrders();
+  });
 }
 
 function markLate(id){
@@ -2923,10 +3093,17 @@ function markLate(id){
 
 function markNoshow(id){
   const o=db.orders.find(o=>o.id===id);if(!o)return;
-  if(!confirm(`標記爽約？\n${findCustomer(o.phone)?.name||o.phone} / ${o.plate}\n\n訂單將保留，可隨時復原`))return;
-  o.status='noshow';
-  o.noshowTime=nowStr();
-  scheduleSave();renderToday();
+  const c=findCustomer(o.phone);
+  askConfirm({
+    title:'標記爽約?',
+    body:`${c?.name||o.phone} / ${o.plate}\n\n訂單將保留,可隨時復原。`,
+    okText:'確定標記',
+    okStyle:'red'
+  },()=>{
+    o.status='noshow';
+    o.noshowTime=nowStr();
+    scheduleSave();renderToday();
+  });
 }
 
 function todaySetStatus(id,status){
@@ -2940,9 +3117,11 @@ function todaySetStatus(id,status){
     if(!o.price||o.price===0) missing.push('金額');
     if(!c?.name) missing.push('客戶姓名');
     if(missing.length>0){
-      if(confirm(`❌ 無法完成結單，請先補齊：\n・${missing.join('\n・')}\n\n要前往補填資料嗎？`)){
-        openOrderEdit(id);
-      }
+      askConfirm({
+        title:'❌ 無法完成結單',
+        body:`請先補齊以下資料:\n・${missing.join('\n・')}\n\n要前往補填資料嗎?`,
+        okText:'前往補填'
+      },()=>openOrderEdit(id));
       return;
     }
     openPaySheet(id);
@@ -2950,7 +3129,17 @@ function todaySetStatus(id,status){
   }
   // 從完成回退需確認
   if(o.status==='done'&&status!=='done'){
-    if(!confirm(`確認要將已完成訂單改回「${status==='doing'?'進行中':'待處理'}」？\n\n${o.plate} — ${o.service}`))return;
+    askConfirm({
+      title:'確認改回未完成狀態?',
+      body:`將「${o.plate} — ${o.service}」改回「${status==='doing'?'進行中':'待處理'}」`,
+      okText:'確定改回',
+      okStyle:'red'
+    },()=>{
+      o.status=status;
+      scheduleSave();
+      renderToday();
+    });
+    return;
   }
   o.status=status;
   scheduleSave();
@@ -2965,7 +3154,17 @@ function setStatus(id,status){
   }
   // 從完成回退需確認
   if(o.status==='done'&&status!=='done'){
-    if(!confirm(`確認要將已完成訂單改回「${status==='doing'?'進行中':'待處理'}」？\n\n${o.plate} — ${o.service}`))return;
+    askConfirm({
+      title:'確認改回未完成狀態?',
+      body:`將「${o.plate} — ${o.service}」改回「${status==='doing'?'進行中':'待處理'}」`,
+      okText:'確定改回',
+      okStyle:'red'
+    },()=>{
+      o.status=status;
+      scheduleSave();
+      renderOrders();
+    });
+    return;
   }
   o.status=status;
   scheduleSave();
@@ -2986,6 +3185,14 @@ function toggleOrder(id){
     manualCollapsed.delete(id);
   }
   renderOrders();
+}
+
+// v3.45: 從收合狀態下點申請刪除沙漏時,自動展開卡片並 focus 密碼欄
+function focusDeleteRequest(id){
+  expandedOrders.add(id);
+  manualCollapsed.delete(id);
+  renderOrders();
+  setTimeout(()=>document.getElementById('delete-pwd-'+id)?.focus(),50);
 }
 
 function renderOrders(){
@@ -3052,6 +3259,10 @@ function renderOrders(){
     const isIncomplete=missingFields.length>0&&(o.status==='pending'||o.status==='doing');
 
     // 摺疊標頭（永遠顯示）
+    // v3.45: 標頭右側加申請刪除 icon,收合狀態下也能直接點;已申請者顯示沙漏,點下去展開卡片定位密碼欄
+    const quickDelIcon=o.deleteRequested
+      ? `<span onclick="event.stopPropagation();focusDeleteRequest('${o.id}');" title="待店長審核" style="font-size:16px;cursor:pointer;padding:6px 8px;color:#A32D2D;flex-shrink:0">⏳</span>`
+      : `<span onclick="event.stopPropagation();requestDelete('${o.id}');" title="申請刪除" style="font-size:14px;cursor:pointer;padding:6px 8px;color:#A32D2D;opacity:0.55;flex-shrink:0" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.55'">🗑</span>`;
     const header=`<div onclick="toggleOrder('${o.id}')" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:2px 0;user-select:none">
       <div style="flex:1;min-width:0">
         <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
@@ -3065,7 +3276,8 @@ function renderOrders(){
         </div>
         <div style="font-size:11px;color:var(--text3);margin-top:1px">${o.id} · ${o.created.slice(0,10)} · ${o.price?'$'+o.price.toLocaleString():'⚠ 未填金額'}</div>
       </div>
-      <div style="font-size:18px;color:var(--text3);margin-left:8px;flex-shrink:0">${isExpanded?'▲':'▼'}</div>
+      ${quickDelIcon}
+      <div style="font-size:18px;color:var(--text3);margin-left:4px;flex-shrink:0">${isExpanded?'▲':'▼'}</div>
     </div>`;
 
     // 展開內容
@@ -3107,7 +3319,10 @@ function renderOrders(){
   // 今日 & 進行中（預設展開，除非手動縮起）
   if(activeList.length){
     activeList.forEach(o=>{
-      if(!manualCollapsed.has(o.id)&&(o.status==='pending'||o.status==='doing'))
+      // v3.45: 今日完成的單也預設展開(員工常在做完才發現開錯,要快速找到申請刪除鈕)
+      const isToday=o.created.startsWith(today);
+      const shouldDefaultExpand=o.status==='pending'||o.status==='doing'||(isToday&&o.status==='done');
+      if(!manualCollapsed.has(o.id)&&shouldDefaultExpand)
         expandedOrders.add(o.id);
     });
     html+=`<div style="font-size:12px;font-weight:600;color:var(--text2);margin:12px 0 6px">今日 / 進行中與待處理（${activeList.length}）</div>`;
@@ -3233,12 +3448,38 @@ function walletBadgeHtml(w){
 
 
 
+let pendingDelReqId=null;
+
 function requestDelete(id){
   const o=db.orders.find(o=>o.id===id);if(!o)return;
   const c=findCustomer(o.phone);
-  if(!confirm(`申請刪除此訂單？\n${o.id} — ${o.service}\n${c?(c.name||'未填姓名'):o.phone} / ${o.plate}\n\n訂單將標記為「待審核刪除」，需店長密碼確認才會真正刪除`))return;
+  pendingDelReqId=id;
+  const infoEl=document.getElementById('del-req-info');
+  if(infoEl){
+    infoEl.innerHTML=`<div style="font-weight:600">${o.id} — ${o.service||'(未填服務)'}</div>
+      <div style="font-size:13px;color:var(--text2);margin-top:4px">${c?(c.name||'未填姓名'):o.phone} / ${o.plate||'未填車牌'}</div>`;
+  }
+  const overlay=document.getElementById('del-req-overlay');
+  const sheet=document.getElementById('del-req-sheet');
+  if(overlay) overlay.style.display='block';
+  if(sheet) sheet.style.display='block';
+}
+
+function closeDelReqSheet(){
+  pendingDelReqId=null;
+  const overlay=document.getElementById('del-req-overlay');
+  const sheet=document.getElementById('del-req-sheet');
+  if(overlay) overlay.style.display='none';
+  if(sheet) sheet.style.display='none';
+}
+
+function confirmRequestDelete(){
+  if(!pendingDelReqId) return;
+  const o=db.orders.find(o=>o.id===pendingDelReqId);
+  if(!o){ closeDelReqSheet(); return; }
   o.deleteRequested=true;
   o.deleteRequestedAt=nowStr();
+  closeDelReqSheet();
   scheduleSave();
   renderOrders();
 }
@@ -3262,7 +3503,7 @@ function approveDelete(id){
     if(input){input.value='';input.focus();}
     return;
   }
-  if(!confirm(`確認刪除訂單？\n${o.id} — ${o.service} / ${o.plate}\n此操作無法復原`))return;
+  // v3.46: 密碼正確已是門檻,移除 native confirm(),iPad 上可能擋掉;直接刪除
   if(o.deducted&&o.payment==='wallet'&&o.price>0){
     const w=getWallet(o.phone);
     w.balance+=o.price;
@@ -3448,12 +3689,18 @@ function addStaff(){
 function removeStaff(idx){
   const s=appSettings.staff[idx];
   const name=typeof s==='string'?s:s.name;
-  if(!confirm(`移除員工「${name}」？`))return;
-  appSettings.staff.splice(idx,1);
-  saveSettings();
-  renderStaffEditor();
-  updateAllStaffSelects();
-  document.getElementById('staff-msg').innerHTML=`<div class="msg msg-success">${name} 已移除</div>`;
+  askConfirm({
+    title:'移除員工?',
+    body:`將移除「${name}」。\n\n已建立的訂單與班表記錄不受影響。`,
+    okText:'確定移除',
+    okStyle:'red'
+  },()=>{
+    appSettings.staff.splice(idx,1);
+    saveSettings();
+    renderStaffEditor();
+    updateAllStaffSelects();
+    document.getElementById('staff-msg').innerHTML=`<div class="msg msg-success">${name} 已移除</div>`;
+  });
 }
 
 
@@ -3570,27 +3817,32 @@ function importData(){
   if(!parsed.customers||!Array.isArray(parsed.customers)){
     msgEl.innerHTML='<div class="msg msg-error">資料格式不符，找不到客戶資料</div>';return;
   }
-  if(!confirm(`確定要匯入資料嗎？\n\n將匯入：\n・客戶 ${parsed.customers?.length||0} 位\n・訂單 ${parsed.orders?.length||0} 筆\n・排程 ${parsed.schedule?.length||0} 筆\n\n⚠️ 現有資料將被完全覆蓋，此操作無法復原！`))return;
-
-  // 還原資料
-  if(parsed.customers) db.customers=parsed.customers;
-  if(parsed.orders) db.orders=parsed.orders;
-  if(parsed.referrals) db.referrals=parsed.referrals;
-  if(parsed.wallets) db.wallets=parsed.wallets;
-  if(parsed.schedule) db.schedule=parsed.schedule;
-  // 還原設定（可選）
-  if(parsed.settings){
-    appSettings={...appSettings,...parsed.settings};
-    saveSettings();
-    updateAllStaffSelects();
-  }
-  scheduleSave();
-  msgEl.innerHTML=`<div class="msg msg-success">✓ 匯入成功！客戶 ${db.customers.length} 位 / 訂單 ${db.orders.length} 筆</div>`;
-  document.getElementById('import-json').value='';
-  // 重新渲染
-  renderToday();
-  renderCustomerList();
-  renderOrders();
+  askConfirm({
+    title:'⚠️ 確定要匯入資料嗎?',
+    body:`將匯入:\n・客戶 ${parsed.customers?.length||0} 位\n・訂單 ${parsed.orders?.length||0} 筆\n・排程 ${parsed.schedule?.length||0} 筆\n\n現有資料將被完全覆蓋,此操作無法復原!`,
+    okText:'確定覆蓋匯入',
+    okStyle:'red'
+  },()=>{
+    // 還原資料
+    if(parsed.customers) db.customers=parsed.customers;
+    if(parsed.orders) db.orders=parsed.orders;
+    if(parsed.referrals) db.referrals=parsed.referrals;
+    if(parsed.wallets) db.wallets=parsed.wallets;
+    if(parsed.schedule) db.schedule=parsed.schedule;
+    // 還原設定（可選）
+    if(parsed.settings){
+      appSettings={...appSettings,...parsed.settings};
+      saveSettings();
+      updateAllStaffSelects();
+    }
+    scheduleSave();
+    msgEl.innerHTML=`<div class="msg msg-success">✓ 匯入成功！客戶 ${db.customers.length} 位 / 訂單 ${db.orders.length} 筆</div>`;
+    document.getElementById('import-json').value='';
+    // 重新渲染
+    renderToday();
+    renderCustomerList();
+    renderOrders();
+  });
 }
 
 function diagnoseData(){
@@ -3664,19 +3916,35 @@ function diagnoseData(){
 }
 
 function clearAllData(){
-  if(!confirm('確定要清除所有資料嗎？\n\n這會刪除全部客戶、訂單、排程資料，此操作無法復原！')) return;
-  const pwd=prompt('請輸入管理密碼以確認清除：');
-  if(pwd===null) return;  // 使用者按取消
+  // v3.50: 改用 sheet(取代 prompt + 兩段 confirm,iPad 上不穩)
+  const pwdInput=document.getElementById('cad-pwd');
+  const msgEl=document.getElementById('cad-msg');
+  if(pwdInput) pwdInput.value='';
+  if(msgEl) msgEl.textContent='';
+  document.getElementById('cad-overlay').style.display='block';
+  document.getElementById('cad-sheet').style.display='block';
+  setTimeout(()=>pwdInput?.focus(),100);
+}
+function closeClearAllSheet(){
+  document.getElementById('cad-overlay').style.display='none';
+  document.getElementById('cad-sheet').style.display='none';
+}
+function confirmClearAll(){
+  const pwd=document.getElementById('cad-pwd')?.value||'';
+  const msgEl=document.getElementById('cad-msg');
   const correctPwd=appSettings.adminPwd||'0000';
+  if(!pwd){ if(msgEl)msgEl.textContent='請輸入店長密碼'; return; }
   if(pwd!==correctPwd){
-    alert('❌ 密碼錯誤，已取消清除');
+    if(msgEl)msgEl.textContent='密碼錯誤,已取消清除';
+    const i=document.getElementById('cad-pwd');
+    if(i){i.value='';i.focus();}
     return;
   }
-  if(!confirm('最後確認：密碼正確，真的要清除所有資料嗎？')) return;
-  // 直接清掉 localStorage 兩個 key，reload 後會載入 hard-code 模擬資料
+  // 通過 → 清除
   try{ localStorage.removeItem('carwash_db_v1'); }catch(_){}
-  alert('已清除所有資料，頁面將重新載入');
-  location.reload();
+  closeClearAllSheet();
+  showToast('已清除所有資料,頁面將重新載入',{duration:1500});
+  setTimeout(()=>location.reload(),1500);
 }
 
 // 一鍵刪除（無確認，給模擬器/快取卡住時用）
@@ -4575,17 +4843,35 @@ function deleteSchedDetail(){
   if(!schedDetailId)return;
   const e=(db.schedule||[]).find(e=>e.id===schedDetailId);
   if(!e)return;
-  if(confirm(`刪除排程？\n${e.plate} / ${e.service}\n${e.date} ${e.start}（${e.dur} 分）`)){
+  askConfirm({
+    title:'刪除排程?',
+    body:`${e.plate} / ${e.service}\n${e.date} ${e.start} (${e.dur} 分)`,
+    okText:'確定刪除',
+    okStyle:'red'
+  },()=>{
     db.schedule=db.schedule.filter(s=>s.id!==schedDetailId);
     scheduleSave();
     closeSchedDetail();
     renderDay();
     renderMonth();
-  }
+  });
 }
 
 // schedFillCar, checkSchedOverlap, addSchedEntry 已移除（新增排程改由開單頁面處理）
-function confirmDeleteSched(id){const e=(db.schedule||[]).find(e=>e.id===id);if(!e)return;if(confirm(`刪除排程？\n${e.plate} / ${e.service}\n${e.date} ${e.start} (${e.dur}分)`)){db.schedule=db.schedule.filter(s=>s.id!==id);renderDay();renderMonth();}}
+function confirmDeleteSched(id){
+  const e=(db.schedule||[]).find(e=>e.id===id);if(!e)return;
+  askConfirm({
+    title:'刪除排程?',
+    body:`${e.plate} / ${e.service}\n${e.date} ${e.start} (${e.dur} 分)`,
+    okText:'確定刪除',
+    okStyle:'red'
+  },()=>{
+    db.schedule=db.schedule.filter(s=>s.id!==id);
+    scheduleSave();
+    renderDay();
+    renderMonth();
+  });
+}
 
 // 已移除 sched-start/sched-dur change listener
 
