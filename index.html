@@ -228,7 +228,7 @@ textarea{resize:vertical;min-height:72px}
     <div class="tab" onclick="switchTab('shift')">班表</div>
     <div class="tab" onclick="switchTab('admin')">中控台</div>
     <div style="margin-left:auto;padding:0 12px;display:flex;align-items:center;flex-shrink:0">
-      <span style="font-size:10px;font-weight:600;color:rgba(255,255,255,0.35);letter-spacing:0.04em">v3.43</span>
+      <span style="font-size:10px;font-weight:600;color:rgba(255,255,255,0.35);letter-spacing:0.04em">v3.44</span>
     </div>
   </div>
 
@@ -1820,17 +1820,14 @@ function selectOrderCustomer(phone){
   if(noshowCount>0){
     setTimeout(()=>alert(`⚠️ 注意：此客戶曾有 ${noshowCount} 次爽約紀錄\n\n請確認是否繼續開單`),100);
   }
+  // v3.44: 移除重複的姓名/電話/車數(已在 step-who-summary 顯示),只渲染「開單時要注意的事」
   const infoEl=document.getElementById('order-customer-info');
-  infoEl.innerHTML=`<div style="padding:10px 12px;border-radius:10px;background:${ts.bg};border:1.5px solid ${ts.border};margin-bottom:8px">
-    <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
-      <span style="font-size:14px;font-weight:600;color:${ts.text}">${c.name||'（未填姓名）'}</span>
-      <span style="font-size:11px;padding:1px 7px;border-radius:99px;background:${ts.badge};color:${ts.badgeText};font-weight:700">${getMemberTierLabel(tier, c.memberId)}</span>
-    </div>
-    <div style="font-size:12px;color:${ts.text};opacity:0.7">${c.phone} · ${c.cars.length} 台車</div>
-    ${bonus>0?`<div style="font-size:12px;color:#0C447C;margin-top:3px">保養金 $${bonus.toLocaleString()} 可用</div>`:''}
-    ${hasReferral?`<div style="font-size:12px;color:#633806;margin-top:3px">⭐ 首洗推薦折抵待使用</div>`:''}
-    ${c.note?`<div style="font-size:12px;color:#633806;margin-top:5px;padding:6px 8px;background:#FAEEDA;border-radius:6px">📝 ${c.note.length>50?c.note.slice(0,50)+'…':c.note}</div>`:''}
-  </div>`;
+  const noteParts=[];
+  if(bonus>0)noteParts.push(`<div style="font-size:12px;color:#0C447C;padding:4px 0">💰 保養金 $${bonus.toLocaleString()} 可用</div>`);
+  if(hasReferral)noteParts.push(`<div style="font-size:12px;color:#633806;padding:4px 0">⭐ 首洗推薦折抵待使用</div>`);
+  if(c.note)noteParts.push(`<div style="font-size:12px;color:#633806;padding:6px 8px;background:#FAEEDA;border-radius:6px;margin-top:4px">📝 ${c.note.length>50?c.note.slice(0,50)+'…':c.note}</div>`);
+  if(c.cars.length>1)noteParts.push(`<div style="font-size:12px;color:var(--text2);padding:4px 0">🚗 此客戶有 ${c.cars.length} 台車,請確認下方車輛選擇</div>`);
+  infoEl.innerHTML=noteParts.length?`<div style="margin-top:8px">${noteParts.join('')}</div>`:'';
   document.getElementById('order-cars').innerHTML=c.cars.map(car=>`<span class="chip" onclick="selectCar('${car.plate}',this)">${car.plate} <span class="badge badge-a" style="margin-left:2px;font-size:10px;background:#f0efea;color:#555">${car.type}</span></span>`).join('');
   // 只有一台車 → 自動選擇
   if(c.cars.length===1){
@@ -1960,7 +1957,11 @@ function showStepWhoCollapsed(){
   document.getElementById('step-who-collapsed').style.display='';
   const summaryEl=document.getElementById('step-who-summary');
   if(summaryEl){
-    summaryEl.textContent=`${c.name||'未填姓名'}　${c.phone}`;
+    // v3.44: 摘要列加上會員等級徽章
+    const tier=getMemberTier(orderState.phone);
+    const ts=getMemberTierStyle(tier);
+    const tierLabel=getMemberTierLabel(tier, c.memberId);
+    summaryEl.innerHTML=`${c.name||'未填姓名'}　<span style="font-size:11px;padding:1px 7px;border-radius:99px;background:${ts.badge};color:${ts.badgeText};font-weight:700;margin:0 4px">${tierLabel}</span>　<span style="font-weight:400;color:var(--text2);font-size:13px">${c.phone}</span>`;
   }
   document.getElementById('step-when').style.display='';
 }
@@ -3801,10 +3802,23 @@ function renderShiftCal(){
     const ds=`${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
     const isMon=new Date(ds+'T12:00:00').getDay()===1;
     const isToday=ds===today;
+    // v3.44: 班表月曆收斂 — 全員到齊只標「全員出勤」,有人請假才細列請假者
     const onStaff=isMon?[]:staffNames.filter(n=>getShiftStatus(ds,n)==='on');
+    const offStaff=isMon?[]:staffNames.filter(n=>getShiftStatus(ds,n)==='off');
+    let cellBody;
+    if(isMon){
+      cellBody=`<div style="font-size:9px;color:#854F0B;font-weight:600">公休</div>`;
+    } else if(offStaff.length===0 && onStaff.length>0){
+      cellBody=`<div style="font-size:9px;color:#085041;background:#E1F5EE;border-radius:3px;padding:2px 4px;font-weight:600">全員出勤</div>`;
+    } else if(offStaff.length>0){
+      // 有人休假 — 只列請假者
+      cellBody=offStaff.map(n=>`<div style="font-size:9px;color:#A32D2D;background:#FCEBEB;border-radius:3px;padding:1px 3px;margin-bottom:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">休 ${n}</div>`).join('');
+    } else {
+      cellBody='';
+    }
     html+=`<div style="border-right:0.5px solid var(--border);border-bottom:0.5px solid var(--border);min-height:64px;padding:4px;background:${isToday?'#E1F5EE':isMon?'#FFF3E0':'var(--bg)'}">
       <div style="font-size:12px;font-weight:${isToday?'700':'500'};color:${isToday?'var(--green)':isMon?'#854F0B':'var(--text)'};margin-bottom:3px">${d}</div>
-      ${isMon?`<div style="font-size:9px;color:#854F0B;font-weight:600">公休</div>`:onStaff.map(n=>`<div style="font-size:9px;color:#085041;background:#E1F5EE;border-radius:3px;padding:1px 3px;margin-bottom:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${n}</div>`).join('')}
+      ${cellBody}
     </div>`;
   }
   // 補尾部空格
