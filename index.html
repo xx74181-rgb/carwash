@@ -227,7 +227,7 @@ textarea{resize:vertical;min-height:72px}
     <div class="tab" onclick="switchTab('orders')">訂單紀錄</div>
     <div class="tab" onclick="switchTab('admin')">中控台</div>
     <div style="margin-left:auto;padding:0 12px;display:flex;align-items:center;flex-shrink:0">
-      <span style="font-size:10px;font-weight:600;color:rgba(255,255,255,0.35);letter-spacing:0.04em">v3.37</span>
+      <span style="font-size:10px;font-weight:600;color:rgba(255,255,255,0.35);letter-spacing:0.04em">v3.38</span>
     </div>
   </div>
 
@@ -444,7 +444,7 @@ textarea{resize:vertical;min-height:72px}
       </div>
       <div id="workday-summary" style="font-size:13px;color:var(--text2);margin-bottom:4px;min-height:20px"></div>
       <div class="col" style="margin-bottom:12px"><label>備註（選填）</label><textarea id="order-note" placeholder="特殊說明、客戶要求..."></textarea></div>
-      <button class="btn primary block" onclick="createOrder()" style="font-size:16px;padding:16px">確認開單</button>
+      <button class="btn primary block" onclick="createOrder()" style="font-size:18px;padding:20px;font-weight:700;margin-top:8px">✓ 確認開單</button>
     </div>
 
     <div id="order-msg" style="margin-top:8px"></div>
@@ -2012,6 +2012,8 @@ function createOrder(){
     }
   }
   msgEl.innerHTML=`<div class="msg msg-success">訂單 ${id} 已建立 — ${orderState.service} / ${orderState.plate} / $${price.toLocaleString()}${appt?' / 預約'+appt:''}${staff?' / '+staff:''}</div>`;
+  // 中央 toast 通知
+  showToast(`訂單已建立<br><span style="font-size:14px;opacity:0.85;font-weight:500">${orderState.plate || '—'}　$${price.toLocaleString()}</span>`, {duration:2200});
   orderState={phone:'',plate:'',service:'',payment:null};
   ['order-search','order-price','order-time','order-note','order-appt-date','order-appt-time','order-assistants'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   const wed=document.getElementById('workday-summary');if(wed)wed.innerHTML='';
@@ -4159,6 +4161,31 @@ const SLOT_COLORS=['#5DCAA5','#378ADD','#7F77DD','#EF9F27','#D4537E','#D85A30'];
 const SLOT_TEXT  =['#04342C','#042C53','#26215C','#412402','#4B1528','#4A1B0C'];
 function toMinutes(t){const[h,m]=t.split(':').map(Number);return h*60+m;}
 function fromMinutes(m){return`${String(Math.floor(m/60)).padStart(2,'0')}:${String(m%60).padStart(2,'0')}`;}
+// ── 中央大型 toast 通知 ──
+function showToast(msg, opts){
+  opts=opts||{};
+  const duration=opts.duration||2500;
+  const icon=opts.icon||'✓';
+  // 移除舊的
+  document.querySelectorAll('.center-toast').forEach(el=>el.remove());
+  const t=document.createElement('div');
+  t.className='center-toast';
+  t.style.cssText='position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(0.8);z-index:9999;background:rgba(0,0,0,0.85);color:#fff;padding:32px 40px;border-radius:18px;font-size:18px;font-weight:600;box-shadow:0 12px 40px rgba(0,0,0,0.3);text-align:center;min-width:240px;max-width:80vw;opacity:0;transition:opacity 0.2s, transform 0.2s;font-family:inherit;line-height:1.5';
+  t.innerHTML=`<div style="font-size:56px;margin-bottom:12px;color:#4ADE80">${icon}</div>${msg}`;
+  document.body.appendChild(t);
+  // 動畫進場
+  requestAnimationFrame(()=>{
+    t.style.opacity='1';
+    t.style.transform='translate(-50%,-50%) scale(1)';
+  });
+  // 自動消失
+  setTimeout(()=>{
+    t.style.opacity='0';
+    t.style.transform='translate(-50%,-50%) scale(0.9)';
+    setTimeout(()=>t.remove(),250);
+  }, duration);
+}
+
 function todayStr(){const d=new Date();return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
 function dateStr(y,m,d){return`${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;}
 
