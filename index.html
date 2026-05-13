@@ -221,14 +221,13 @@ textarea{resize:vertical;min-height:72px}
 <body>
 <div class="app-shell">
   <div class="topbar" style="position:relative">
-    <div class="tab" onclick="switchTab('order')">開單</div>
+    <div class="tab" onclick="switchTab('order')">開單／訂單</div>
     <div class="tab active" onclick="switchTab('today')">工作時程</div>
     <div class="tab" onclick="switchTab('search')">會員管理</div>
-    <div class="tab" onclick="switchTab('orders')">訂單紀錄</div>
     <div class="tab" onclick="switchTab('shift')">班表</div>
     <div class="tab" onclick="switchTab('admin')">中控台</div>
     <div style="margin-left:auto;padding:0 12px;display:flex;align-items:center;flex-shrink:0">
-      <span style="font-size:10px;font-weight:600;color:rgba(255,255,255,0.35);letter-spacing:0.04em">v3.53</span>
+      <span style="font-size:10px;font-weight:600;color:rgba(255,255,255,0.35);letter-spacing:0.04em">v3.55</span>
     </div>
   </div>
 
@@ -300,7 +299,41 @@ textarea{resize:vertical;min-height:72px}
 
   <!-- 開單 -->
   <!-- 開單 -->
-  <div id="screen-order" class="screen">
+  <div id="screen-order" class="screen" style="padding:0">
+
+    <!-- v3.55: 訂單列表標題列(搬到頂部,讓查詢/搜尋優先) -->
+    <div id="integrated-orders-header" style="padding:14px 18px 10px;background:var(--bg);border-bottom:1px solid var(--border);position:sticky;top:48px;z-index:4">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+        <button id="new-order-btn" onclick="toggleOrderForm(true)" style="flex-shrink:0;padding:10px 16px;border-radius:var(--radius);border:none;background:var(--green);color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">+ 新增訂單</button>
+        <div style="flex:1;font-size:15px;font-weight:700;color:var(--text);text-align:right">📋 訂單列表</div>
+      </div>
+      <input id="order-search-q" placeholder="搜尋姓名、電話、車牌、日期..." oninput="renderOrders()" style="width:100%;margin-bottom:8px" />
+      <div style="display:flex;gap:8px;align-items:center">
+        <select id="filter-status" onchange="renderOrders()" style="flex:1">
+          <option value="">全部狀態</option>
+          <option value="pending">待處理</option>
+          <option value="doing">進行中</option>
+          <option value="done">已完成</option>
+          <option value="noshow">爽約</option>
+          <option value="cancelled">已取消</option>
+        </select>
+        <select id="filter-staff" onchange="renderOrders()" style="flex:1">
+          <option value="">全部美容師</option>
+        </select>
+        <label style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2);cursor:pointer;user-select:none;white-space:nowrap;flex-shrink:0">
+          <input type="checkbox" id="orders-show-history" onchange="renderOrders()" style="width:16px;height:16px;accent-color:var(--green);cursor:pointer" />
+          全部歷史
+        </label>
+      </div>
+    </div>
+    <div id="orders-list" style="padding:8px 18px 18px"></div>
+
+    <!-- v3.55: 開單表單(預設收合,點上面「+ 新增訂單」展開) -->
+    <div id="order-form-wrap" style="display:none;border-top:8px solid var(--bg2);padding:14px 18px 18px;background:var(--bg)">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <div style="font-size:16px;font-weight:700;color:var(--text)">📝 新增訂單</div>
+        <button onclick="toggleOrderForm(false)" style="padding:6px 14px;border-radius:99px;border:1px solid var(--border2);background:var(--bg2);color:var(--text2);font-size:12px;cursor:pointer;font-family:inherit">× 收合</button>
+      </div>
 
     <!-- ═══ 第 1 步：是誰？ ═══ -->
     <div id="step-who" class="step-card">
@@ -449,27 +482,8 @@ textarea{resize:vertical;min-height:72px}
     </div>
 
     <div id="order-msg" style="margin-top:8px"></div>
-  </div>
-  <!-- 訂單管理 -->
-  <div id="screen-orders" class="screen" style="padding:0">
-    <!-- 搜尋列 -->
-    <div style="padding:10px 18px;border-bottom:1px solid var(--border);background:var(--bg);position:sticky;top:52px;z-index:5">
-      <input id="order-search-q" placeholder="搜尋姓名、電話、車牌、日期..." oninput="renderOrders()" style="width:100%;margin-bottom:8px" />
-      <div style="display:flex;gap:8px">
-        <select id="filter-status" onchange="renderOrders()" style="flex:1">
-          <option value="">全部狀態</option>
-          <option value="pending">待處理</option>
-          <option value="doing">進行中</option>
-          <option value="done">已完成</option>
-          <option value="noshow">爽約</option>
-          <option value="cancelled">已取消</option>
-        </select>
-        <select id="filter-staff" onchange="renderOrders()" style="flex:1">
-          <option value="">全部美容師</option>
-        </select>
-      </div>
-    </div>
-    <div id="orders-list" style="padding:0 18px 18px"></div>
+
+    </div><!-- /order-form-wrap -->
   </div>
 
   <!-- 車輛紀錄 -->
@@ -1107,7 +1121,9 @@ let orderStateVehicle = null;
 function switchTab(name) {
   // checkout 已整合進工作時程，相容舊呼叫 → 改去 today
   if(name==='checkout') name='today';
-  const names = ['order','today','search','orders','shift','admin','dashboard','expense','settings'];
+  // v3.54: 訂單紀錄整合進開單 tab,舊呼叫導向 order
+  if(name==='orders'){ name='order'; window.__scrollToOrdersList=true; }
+  const names = ['order','today','search','shift','admin','dashboard','expense','settings'];
   document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active', names[i]===name));
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById('screen-'+name).classList.add('active');
@@ -1120,13 +1136,40 @@ function switchTab(name) {
     if(btn){ btn.textContent='☰ 收起客戶列表'; }
     renderCustomerList();
   }
-  if(name==='orders') renderOrders();
   if(name==='dashboard') renderDash();
   if(name==='schedule') renderSchedule();
   if(name==='shift'){ renderShiftScreen(); }
   // wallet tab removed
   // checkout tab removed (整合進工作時程)
-  if(name==='order'){ initOrderTab(); }
+  if(name==='order'){
+    initOrderTab();
+    renderOrders(); // v3.54: 同步渲染下方列表
+    // v3.55: 切回 order tab 時根據 orderFormOpen 同步表單可見狀態
+    const wrap=document.getElementById('order-form-wrap');
+    const btn=document.getElementById('new-order-btn');
+    if(wrap&&btn){
+      if(orderFormOpen){
+        wrap.style.display='block';
+        btn.textContent='× 收起新增';
+        btn.style.background='var(--bg2)';
+        btn.style.color='var(--text)';
+        btn.onclick=()=>toggleOrderForm(false);
+      } else {
+        wrap.style.display='none';
+        btn.textContent='+ 新增訂單';
+        btn.style.background='var(--green)';
+        btn.style.color='#fff';
+        btn.onclick=()=>toggleOrderForm(true);
+      }
+    }
+    if(window.__scrollToOrdersList){
+      window.__scrollToOrdersList=false;
+      setTimeout(()=>{
+        const el=document.getElementById('integrated-orders-header');
+        if(el) el.scrollIntoView({behavior:'smooth',block:'start'});
+      },100);
+    }
+  }
   if(name==='expense'){ renderInventory(); }
   if(name==='admin'){ renderAdminScreen(); }
   if(name==='dashboard'){ renderDash(); }
@@ -1573,6 +1616,35 @@ function initOrderTab(){
     if(stepWhoCollapsed) stepWhoCollapsed.style.display='none';
     if(stepWhen) stepWhen.style.display='none';
     if(stepWhat) stepWhat.style.display='none';
+  }
+}
+
+// v3.55: 開單表單收合/展開
+// orderFormOpen 維持狀態(切 tab 回來保留),預設關
+let orderFormOpen=false;
+function toggleOrderForm(open){
+  orderFormOpen=!!open;
+  const wrap=document.getElementById('order-form-wrap');
+  const btn=document.getElementById('new-order-btn');
+  if(!wrap||!btn) return;
+  if(orderFormOpen){
+    wrap.style.display='block';
+    btn.textContent='× 收起新增';
+    btn.style.background='var(--bg2)';
+    btn.style.color='var(--text)';
+    btn.onclick=()=>toggleOrderForm(false);
+    // 重新初始化開單流程(對齊 switchTab 的 initOrderTab)
+    initOrderTab();
+    // 捲到開單表單
+    setTimeout(()=>{
+      wrap.scrollIntoView({behavior:'smooth',block:'start'});
+    },50);
+  } else {
+    wrap.style.display='none';
+    btn.textContent='+ 新增訂單';
+    btn.style.background='var(--green)';
+    btn.style.color='#fff';
+    btn.onclick=()=>toggleOrderForm(true);
   }
 }
 
@@ -2194,6 +2266,22 @@ function createOrder(){
   orderWhenMode=null;
   ['now','wait','future'].forEach(m=>document.getElementById('when-btn-'+m)?.classList.remove('selected'));
   document.querySelectorAll('.wait-btn').forEach(b=>b.classList.remove('selected'));
+  // v3.54: 重繪下方訂單列表,讓剛建的單立刻出現
+  renderOrders();
+  // v3.55: 建單成功後自動收合表單(讓使用者立刻看到列表頂部的新單)
+  toggleOrderForm(false);
+  // v3.54: 短暫高亮剛建的單(讓員工有「建單成功」的視覺確認)
+  setTimeout(()=>{
+    const cards=document.querySelectorAll('#orders-list [data-order-id]');
+    const justCreated=Array.from(cards).find(c=>c.dataset.orderId===id);
+    if(justCreated){
+      justCreated.style.transition='background 0.4s';
+      justCreated.style.background='#FFF9D6';
+      // v3.55: 捲到剛建的單(因為表單已收合,列表往上推)
+      justCreated.scrollIntoView({behavior:'smooth',block:'center'});
+      setTimeout(()=>{ justCreated.style.background=''; },2000);
+    }
+  },150);
 }
 
 const notified=new Set();
@@ -2479,7 +2567,7 @@ function renderDayViewInToday(){
   const timelineEl=document.getElementById('today-day-timeline');
   if(!timelineEl)return;
   if(!entries.length){
-    timelineEl.innerHTML=`<div style="text-align:center;padding:40px 0;color:var(--text3);font-size:14px">今日無排程<br><br><button class="btn primary" onclick="switchTab('order')" style="font-size:14px;margin-top:8px">立即開單 →</button></div>`;
+    timelineEl.innerHTML=`<div style="text-align:center;padding:40px 0;color:var(--text3);font-size:14px">今日無排程<br><br><button class="btn primary" onclick="switchTab('order');toggleOrderForm(true)" style="font-size:14px;margin-top:8px">立即開單 →</button></div>`;
     return;
   }
   // 建立簡易時間軸
@@ -2536,10 +2624,12 @@ function renderDayViewInToday(){
 function goOrder(phone){
   orderState.phone='';orderState.plate='';
   switchTab('order');
+  // v3.55: 明確的開單意圖 → 自動展開表單
+  toggleOrderForm(true);
   if(phone) setTimeout(()=>{
     const el=document.getElementById('order-search');
     if(el){el.value=phone;fillOrderCustomer();}
-  },100);
+  },150);
 }
 
 function goHistory(phone){
@@ -2721,8 +2811,12 @@ function renderToday(){
     const numC={pending:'#633806',doing:'#0C447C',done:'#085041',noshow:'#791F1F',cancelled:'#888'}[status]||'#633806';
     const memberIdStr=customer?.memberId||'';
     const isLate=s&&toMinutes(s.start)<nowM&&(status==='pending'||o?.lateMarked);
+    const isCancelled=status==='cancelled';
     const cardBorder=isNoshow?'border-color:#A32D2D':isLate?'border-color:#E24B4A':isBlack?'border-color:#FFD700;border-width:2px':'';
-    return`<div class="work-card" data-status="${status}">
+    // v3.54: 取消訂單視覺辨識 — 整張卡半透明 + 車牌刪除線
+    const cardStyle=isCancelled?'opacity:0.55;background:#F8F8F6':'';
+    const plateStyle=isCancelled?'text-decoration:line-through;color:#888':'';
+    return`<div class="work-card" data-status="${status}" style="${cardStyle}">
       ${isBlack?`<div style="background:#1A1A1A;color:#FFD700;font-size:11px;font-weight:700;padding:4px 14px;margin:0 0 10px 0;border-radius:0;letter-spacing:0.05em">⬛ 黑卡會員 ${memberIdStr}</div>`:''}
       <div class="work-card-top">
         <div class="work-card-left">
@@ -2732,11 +2826,12 @@ function renderToday(){
         </div>
         <div class="work-card-body">
           <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
-            <div class="work-plate">${plate}</div>
-            ${isLate&&!isNoshow?'<span style="font-size:10px;color:#E65100;font-weight:600;padding:1px 6px;background:#FFF3E0;border-radius:99px">遲到</span>':''}
+            <div class="work-plate" style="${plateStyle}">${plate}</div>
+            ${isCancelled?'<span style="font-size:10px;color:#888;font-weight:600;padding:1px 6px;background:#F0F0F0;border-radius:99px">已取消</span>':''}
+            ${isLate&&!isNoshow&&!isCancelled?'<span style="font-size:10px;color:#E65100;font-weight:600;padding:1px 6px;background:#FFF3E0;border-radius:99px">遲到</span>':''}
             ${isNoshow?'<span style="font-size:10px;color:#791F1F;font-weight:600;padding:1px 6px;background:#FCEBEB;border-radius:99px">爽約</span>':''}
-            ${o?.lateMarked&&!isNoshow?'<span style="font-size:10px;color:#E65100;font-weight:500;padding:1px 6px;background:#FFF3E0;border-radius:99px">已標記遲到</span>':''}
-            ${noshowCount>0&&status!=='noshow'?`<span style="font-size:10px;color:#791F1F;font-weight:600;padding:1px 6px;background:#FCEBEB;border-radius:99px">⚠ 曾爽約${noshowCount}次</span>`:''}
+            ${o?.lateMarked&&!isNoshow&&!isCancelled?'<span style="font-size:10px;color:#E65100;font-weight:500;padding:1px 6px;background:#FFF3E0;border-radius:99px">已標記遲到</span>':''}
+            ${noshowCount>0&&status!=='noshow'&&!isCancelled?`<span style="font-size:10px;color:#791F1F;font-weight:600;padding:1px 6px;background:#FCEBEB;border-radius:99px">⚠ 曾爽約${noshowCount}次</span>`:''}
           </div>
           <div class="work-meta">${name}</div>
           <div style="margin-top:4px;display:flex;gap:6px;align-items:center;flex-wrap:wrap">
@@ -2747,7 +2842,10 @@ function renderToday(){
       ${note?`<div class="work-note">${note}</div>`:''}
       ${o?.handoverNote?`<div style="padding:8px 14px;font-size:12px;color:#633806;background:#FAEEDA;border-top:1px dashed var(--border)">📋 交接：${o.handoverNote}</div>`:''}
       <div class="work-actions">
-        ${o&&!isNoshow?`
+        ${o&&isCancelled?`
+          <div style="flex:1;padding:10px;font-size:12px;color:#888;text-align:center">已取消${o.cancelledAt?'（'+o.cancelledAt.slice(5,16)+'）':''}</div>
+          <button class="work-action-btn" onclick="todaySetStatus('${o.id}','pending')" style="color:#185FA5">復原</button>
+        `:o&&!isNoshow?`
           <button class="work-action-btn ${status==='pending'?'active-pending':''}" onclick="todaySetStatus('${o.id}','pending')">待處理</button>
           <button class="work-action-btn ${status==='doing'?'active-doing':''}" onclick="todaySetStatus('${o.id}','doing')">進行中</button>
           <button class="work-action-btn ${status==='done'?'active-done':''}" onclick="todaySetStatus('${o.id}','done')">完成</button>
@@ -2759,7 +2857,7 @@ function renderToday(){
           <button class="work-action-btn" onclick="todaySetStatus('${o.id}','pending')" style="color:#185FA5">復原</button>
         `:o===null?`<button class="work-action-btn" onclick="goOrder('${s?.phone||''}')">開單 →</button>`:''}
       </div>
-      ${o&&!isNoshow?`
+      ${o&&!isNoshow&&!isCancelled?`
       <div id="quick-note-area-${o.id}" style="display:none;padding:8px 14px;border-top:1px solid var(--border);gap:6px;display:none">
         <div style="font-size:11px;color:var(--text2);margin-bottom:4px">快速備註 / 交接留言</div>
         <div style="display:flex;gap:6px">
@@ -2771,7 +2869,7 @@ function renderToday(){
       `:''}
     </div>`;
   }
-  if(!workItems.length){html+=`<div class="today-empty">今日尚無排程或訂單<br><br><button class="btn primary" onclick="switchTab('order')">立即開單</button></div>`;}
+  if(!workItems.length){html+=`<div class="today-empty">今日尚無排程或訂單<br><br><button class="btn primary" onclick="switchTab('order');toggleOrderForm(true)">立即開單</button></div>`;}
   else{
     if(inProgress.length){html+=`<div class="today-section">進行中</div>`;html+=inProgress.map((w,i)=>buildCard(w,i)).join('');}
     if(waiting.length){html+=`<div class="today-section">待處理</div>`;html+=waiting.map((w,i)=>buildCard(w,i)).join('');}
@@ -3264,9 +3362,21 @@ function renderOrders(){
   const filterStatus=document.getElementById('filter-status')?.value||'';
   const filterStaff=document.getElementById('filter-staff')?.value||'';
   const q=(document.getElementById('order-search-q')?.value||'').trim().toLowerCase();
+  const showHistory=document.getElementById('orders-show-history')?.checked||false;
   const el=document.getElementById('orders-list');
 
   let list=db.orders.slice();
+  // v3.54: 預設只顯示「今日 + pending/doing」,有勾「顯示全部歷史」或有搜尋字串時才放開
+  if(!showHistory && !q && !filterStatus){
+    const today=todayStr();
+    list=list.filter(o=>{
+      // 今日建立的單
+      if(o.created.startsWith(today)) return true;
+      // 未完成的單一律顯示(可能是未來預約或還沒結的舊單)
+      if(o.status==='pending'||o.status==='doing') return true;
+      return false;
+    });
+  }
   if(filterStatus) list=list.filter(o=>o.status===filterStatus);
   if(filterStaff) list=list.filter(o=>o.staff===filterStaff);
   if(q){
@@ -3281,7 +3391,14 @@ function renderOrders(){
     });
   }
 
-  if(!list.length){el.innerHTML='<div class="empty" style="padding:32px 0">找不到符合的訂單</div>';return;}
+  if(!list.length){
+    // v3.54: 沒結果時顯示提示 + 載入全部按鈕
+    const hint=(!showHistory && !q && !filterStatus)
+      ? '<div style="margin-top:8px;font-size:12px;color:var(--text3)">目前無今日或未完成的訂單<br>勾選「顯示全部歷史」可查看所有訂單</div>'
+      : '';
+    el.innerHTML='<div class="empty" style="padding:32px 0">找不到符合的訂單'+hint+'</div>';
+    return;
+  }
 
   // 分組：今日&進行中 / 未來 / 過去
   const today=todayStr();
@@ -3328,10 +3445,13 @@ function renderOrders(){
     const quickDelIcon=o.deleteRequested
       ? `<span onclick="event.stopPropagation();focusDeleteRequest('${o.id}');" title="待店長審核" style="font-size:16px;cursor:pointer;padding:6px 8px;color:#A32D2D;flex-shrink:0">⏳</span>`
       : `<span onclick="event.stopPropagation();requestDelete('${o.id}');" title="申請刪除" style="font-size:14px;cursor:pointer;padding:6px 8px;color:#A32D2D;opacity:0.55;flex-shrink:0" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.55'">🗑</span>`;
+    // v3.54: 取消訂單視覺辨識 — 車牌刪除線
+    const isCancelled=o.status==='cancelled';
+    const plateStyle=isCancelled?'font-size:14px;font-weight:600;text-decoration:line-through;color:#888':'font-size:14px;font-weight:600';
     const header=`<div onclick="toggleOrder('${o.id}')" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:2px 0;user-select:none">
       <div style="flex:1;min-width:0">
         <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
-          <span style="font-size:14px;font-weight:600">${o.plate||'未填車牌'}</span>
+          <span style="${plateStyle}">${o.plate||'未填車牌'}</span>
           ${isBlack?`<span style="font-size:10px;padding:1px 5px;border-radius:99px;background:#1A1A1A;color:#FFD700;font-weight:700">黑卡</span>`:''}
           <span class="badge badge-${o.status}" style="font-size:11px">${STATUS_LABEL[o.status]||o.status}</span>
           ${payBadge}
@@ -3376,7 +3496,9 @@ function renderOrders(){
       }
     </div>`:'';
 
-    return`<div class="card" style="margin-bottom:8px;padding:14px${o.deleteRequested?';opacity:0.55;background:#F5F5F5':''}">${header}${detail}</div>`;
+    // v3.54: 取消訂單整張卡半透明(對齊工作時程的視覺辨識)
+    const cardWrapStyle=`margin-bottom:8px;padding:14px${o.deleteRequested?';opacity:0.55;background:#F5F5F5':isCancelled?';opacity:0.6;background:#FAFAF8':''}`;
+    return`<div class="card" data-order-id="${o.id}" style="${cardWrapStyle}">${header}${detail}</div>`;
   }
 
   let html='';
