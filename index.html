@@ -227,7 +227,7 @@ textarea{resize:vertical;min-height:72px}
     <div class="tab" onclick="switchTab('shift')">班表</div>
     <div class="tab" onclick="switchTab('admin')">中控台</div>
     <div style="margin-left:auto;padding:0 12px;display:flex;align-items:center;flex-shrink:0">
-      <span style="font-size:10px;font-weight:600;color:rgba(255,255,255,0.35);letter-spacing:0.04em">v3.55</span>
+      <span style="font-size:10px;font-weight:600;color:rgba(255,255,255,0.35);letter-spacing:0.04em">v3.58</span>
     </div>
   </div>
 
@@ -307,9 +307,11 @@ textarea{resize:vertical;min-height:72px}
         <button id="new-order-btn" onclick="toggleOrderForm(true)" style="flex-shrink:0;padding:10px 16px;border-radius:var(--radius);border:none;background:var(--green);color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">+ 新增訂單</button>
         <div style="flex:1;font-size:15px;font-weight:700;color:var(--text);text-align:right">📋 訂單列表</div>
       </div>
+      <!-- v3.56: 今日小計條(只在「今日視角」顯示) -->
+      <div id="orders-today-summary" style="display:none;padding:8px 12px;margin-bottom:8px;background:var(--green-bg);border-radius:var(--radius);font-size:12px;color:var(--green-text);font-weight:600"></div>
       <input id="order-search-q" placeholder="搜尋姓名、電話、車牌、日期..." oninput="renderOrders()" style="width:100%;margin-bottom:8px" />
-      <div style="display:flex;gap:8px;align-items:center">
-        <select id="filter-status" onchange="renderOrders()" style="flex:1">
+      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+        <select id="filter-status" onchange="renderOrders()" style="flex:1;min-width:90px">
           <option value="">全部狀態</option>
           <option value="pending">待處理</option>
           <option value="doing">進行中</option>
@@ -317,13 +319,12 @@ textarea{resize:vertical;min-height:72px}
           <option value="noshow">爽約</option>
           <option value="cancelled">已取消</option>
         </select>
-        <select id="filter-staff" onchange="renderOrders()" style="flex:1">
+        <select id="filter-staff" onchange="renderOrders()" style="flex:1;min-width:90px">
           <option value="">全部美容師</option>
         </select>
-        <label style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2);cursor:pointer;user-select:none;white-space:nowrap;flex-shrink:0">
-          <input type="checkbox" id="orders-show-history" onchange="renderOrders()" style="width:16px;height:16px;accent-color:var(--green);cursor:pointer" />
-          全部歷史
-        </label>
+        <!-- v3.56: 全部歷史改成顯眼 chip,點下去 toggle -->
+        <button id="orders-history-chip" onclick="toggleOrdersHistory()" type="button" style="flex-shrink:0;padding:8px 12px;border-radius:99px;border:1.5px solid var(--border2);background:var(--bg);color:var(--text2);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">📅 今日</button>
+        <input type="checkbox" id="orders-show-history" onchange="renderOrders()" style="display:none" />
       </div>
     </div>
     <div id="orders-list" style="padding:8px 18px 18px"></div>
@@ -334,6 +335,8 @@ textarea{resize:vertical;min-height:72px}
         <div style="font-size:16px;font-weight:700;color:var(--text)">📝 新增訂單</div>
         <button onclick="toggleOrderForm(false)" style="padding:6px 14px;border-radius:99px;border:1px solid var(--border2);background:var(--bg2);color:var(--text2);font-size:12px;cursor:pointer;font-family:inherit">× 收合</button>
       </div>
+      <!-- v3.56: 建單成功訊息(可連續建單,訊息 4 秒後淡出) -->
+      <div id="order-success-msg" style="display:none;padding:10px 14px;margin-bottom:12px;background:var(--green-bg);border:1.5px solid var(--green);border-radius:var(--radius);font-size:13px;color:var(--green-text);font-weight:600"></div>
 
     <!-- ═══ 第 1 步：是誰？ ═══ -->
     <div id="step-who" class="step-card">
@@ -800,6 +803,17 @@ textarea{resize:vertical;min-height:72px}
           <div style="font-size:12px;color:var(--text2);margin-bottom:8px">找出「空 service / 0 元 / 缺欄位」的舊訂單(v3.49 前可能殘留)。UI 已隱藏，但儀表板統計會算進去。</div>
           <button class="btn block" style="margin-bottom:8px" onclick="scanGhostOrders()">🩺 掃描異常訂單</button>
           <div id="ghost-result" style="display:none;margin-top:8px"></div>
+
+          <div class="divider"></div>
+          <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:8px">📊 使用頻率審計</div>
+          <div style="font-size:12px;color:var(--text2);margin-bottom:8px">統計各功能的實際使用率,幫助決定哪些功能可以砍掉、哪些要保留。</div>
+          <div style="display:flex;gap:6px;margin-bottom:8px">
+            <button class="btn" style="flex:1;font-size:12px;padding:8px" onclick="runAudit(7)">最近 7 天</button>
+            <button class="btn" style="flex:1;font-size:12px;padding:8px" onclick="runAudit(30)">最近 30 天</button>
+            <button class="btn" style="flex:1;font-size:12px;padding:8px" onclick="runAudit(90)">最近 90 天</button>
+            <button class="btn" style="flex:1;font-size:12px;padding:8px" onclick="runAudit(99999)">全部</button>
+          </div>
+          <div id="audit-result" style="display:none;margin-top:8px"></div>
 
           <div class="divider"></div>
           <div style="font-size:12px;color:#A32D2D;margin-bottom:8px;font-weight:600">⚠️ 危險操作</div>
@@ -1648,6 +1662,26 @@ function toggleOrderForm(open){
   }
 }
 
+// v3.56: 「📅 今日 / 📅 全部歷史」chip 切換
+function toggleOrdersHistory(){
+  const cb=document.getElementById('orders-show-history');
+  const chip=document.getElementById('orders-history-chip');
+  if(!cb||!chip) return;
+  cb.checked=!cb.checked;
+  if(cb.checked){
+    chip.textContent='📅 全部歷史';
+    chip.style.background='var(--green)';
+    chip.style.color='#fff';
+    chip.style.borderColor='var(--green)';
+  } else {
+    chip.textContent='📅 今日';
+    chip.style.background='var(--bg)';
+    chip.style.color='var(--text2)';
+    chip.style.borderColor='var(--border2)';
+  }
+  renderOrders();
+}
+
 function initServiceChips(){
   const el=document.getElementById('service-chips');
   if(!el)return;
@@ -1801,7 +1835,19 @@ function openOrderEdit(id){
   if(!c?.name) missing.push('客戶姓名');
 
   document.getElementById('order-edit-info').textContent=`訂單 ${o.id} · ${o.created.slice(0,10)}`;
-  document.getElementById('order-edit-missing').innerHTML=`缺少：${missing.map(m=>`<strong>${m}</strong>`).join('、')}`;
+  // v3.57: 訊息區依「有缺資料」或「修改既有單」顯示不同內容
+  const missingEl=document.getElementById('order-edit-missing');
+  if(missing.length>0){
+    missingEl.style.background='#FFF5F5';
+    missingEl.style.borderColor='#E24B4A';
+    missingEl.style.color='#A32D2D';
+    missingEl.innerHTML=`缺少：${missing.map(m=>`<strong>${m}</strong>`).join('、')}`;
+  } else {
+    missingEl.style.background='#FFF8E1';
+    missingEl.style.borderColor='#FFB300';
+    missingEl.style.color='#7A4F00';
+    missingEl.innerHTML=`修改既有訂單資料 — 改完按「儲存」,再回去訂單卡按「完成」結帳`;
+  }
   document.getElementById('oe-name').value=c?.name||'';
   document.getElementById('oe-phone').value=c?.phone===o.phone?o.phone:'';
   document.getElementById('oe-plate').value=o.plate||'';
@@ -2268,20 +2314,39 @@ function createOrder(){
   document.querySelectorAll('.wait-btn').forEach(b=>b.classList.remove('selected'));
   // v3.54: 重繪下方訂單列表,讓剛建的單立刻出現
   renderOrders();
-  // v3.55: 建單成功後自動收合表單(讓使用者立刻看到列表頂部的新單)
-  toggleOrderForm(false);
-  // v3.54: 短暫高亮剛建的單(讓員工有「建單成功」的視覺確認)
+  // v3.56: 不再自動收合表單(支援連續開單),改在表單頂部顯示綠色成功訊息
+  // 員工要查新單可以滑下去看列表,要繼續開單就直接填下一筆
+  const successPlate=newOrder.plate||'(無車牌)';
+  const successMsgEl=document.getElementById('order-success-msg');
+  if(successMsgEl){
+    successMsgEl.innerHTML=`<span style="color:var(--green);font-size:14px">✓</span> 已建立 <strong>${successPlate}</strong>　·　<a onclick="scrollToJustCreated('${id}')" style="color:var(--green);cursor:pointer;text-decoration:underline;font-weight:600">查看新單</a>`;
+    successMsgEl.style.display='block';
+    clearTimeout(window.__createOrderMsgTimer);
+    window.__createOrderMsgTimer=setTimeout(()=>{
+      if(successMsgEl) successMsgEl.style.display='none';
+    },4000);
+  }
+  // 高亮列表中剛建的單(但不自動捲動,讓員工自己決定要不要看)
   setTimeout(()=>{
     const cards=document.querySelectorAll('#orders-list [data-order-id]');
     const justCreated=Array.from(cards).find(c=>c.dataset.orderId===id);
     if(justCreated){
       justCreated.style.transition='background 0.4s';
       justCreated.style.background='#FFF9D6';
-      // v3.55: 捲到剛建的單(因為表單已收合,列表往上推)
-      justCreated.scrollIntoView({behavior:'smooth',block:'center'});
-      setTimeout(()=>{ justCreated.style.background=''; },2000);
+      setTimeout(()=>{ justCreated.style.background=''; },2500);
     }
   },150);
+}
+
+// v3.56: 從「查看新單」連結觸發的捲動
+function scrollToJustCreated(id){
+  const card=document.querySelector(`#orders-list [data-order-id="${id}"]`);
+  if(card){
+    card.scrollIntoView({behavior:'smooth',block:'center'});
+    card.style.transition='background 0.4s';
+    card.style.background='#FFF9D6';
+    setTimeout(()=>{ card.style.background=''; },2000);
+  }
 }
 
 const notified=new Set();
@@ -3358,16 +3423,47 @@ function focusDeleteRequest(id){
   setTimeout(()=>document.getElementById('delete-pwd-'+id)?.focus(),50);
 }
 
+// v3.57 P2: 已完成訂單 → 重新開啟編輯(退回 doing + 開補填介面)
+// 阿明痛點:結完才發現要加打蠟,以前要「退回 pending → 改 → 重結」三步,現在一鍵引導完成
+function reopenForEdit(id){
+  const o=db.orders.find(o=>o.id===id);
+  if(!o) return;
+  const c=findCustomer(o.phone);
+  askConfirm({
+    title:'修改已完成的訂單?',
+    body:`${o.plate||'(無車牌)'} — ${o.service||'(無服務)'}\n${c?.name||'(找不到客戶)'}　·　原金額 $${(o.price||0).toLocaleString()}\n\n將會:\n1. 訂單退回「進行中」狀態\n2. 開啟補填介面讓你加項目/改金額\n3. 改完後再次按「完成」結帳\n\n原本的結帳記錄會被覆蓋,請確認客戶差額已收到。`,
+    okText:'退回並開始編輯',
+    okStyle:'red'
+  },()=>{
+    o.status='doing';
+    delete o.completedAt;
+    // 錢包退款處理(對齊 approveDelete 的退款邏輯)
+    if(o.deducted&&o.payment==='wallet'&&o.price>0){
+      const w=getWallet(o.phone);
+      w.balance+=o.price;
+      w.txns.push({type:'topup',amount:o.price,note:`退款（修改訂單 ${o.id}）`,date:nowStr(),balance:totalBalance(w)});
+      o.deducted=false;
+    }
+    scheduleSave();
+    renderOrders();
+    renderToday();
+    // 開補填介面讓員工改服務/金額
+    setTimeout(()=>openOrderEdit(id),100);
+  });
+}
+
 function renderOrders(){
   const filterStatus=document.getElementById('filter-status')?.value||'';
   const filterStaff=document.getElementById('filter-staff')?.value||'';
   const q=(document.getElementById('order-search-q')?.value||'').trim().toLowerCase();
   const showHistory=document.getElementById('orders-show-history')?.checked||false;
   const el=document.getElementById('orders-list');
+  const summaryEl=document.getElementById('orders-today-summary');
+  const isTodayView=!showHistory && !q && !filterStatus;
 
   let list=db.orders.slice();
   // v3.54: 預設只顯示「今日 + pending/doing」,有勾「顯示全部歷史」或有搜尋字串時才放開
-  if(!showHistory && !q && !filterStatus){
+  if(isTodayView){
     const today=todayStr();
     list=list.filter(o=>{
       // 今日建立的單
@@ -3391,10 +3487,58 @@ function renderOrders(){
     });
   }
 
+  // v3.57 P1: 小計條改為「沒勾全部歷史就顯示」,計算反映當前篩選/搜尋範圍
+  // 之前 isTodayView 太嚴(要求無搜尋無篩選),店長篩員工時看不到對應小計
+  if(summaryEl){
+    if(!showHistory){
+      const today=todayStr();
+      // 跨日訂單中間天也算進「進行中/待處理」(對齊 v3.53)
+      const todaySched=(db.schedule||[]).filter(e=>e.date===today);
+      const schedOrderIds=new Set();
+      todaySched.forEach(e=>{
+        db.orders.forEach(o=>{
+          if(o.phone!==e.phone) return;
+          if(e.plate&&o.plate&&o.plate!==e.plate) return;
+          schedOrderIds.add(o.id);
+        });
+      });
+      // 抓「今日相關」的訂單
+      let todayOrders=db.orders.filter(o=>o.created.startsWith(today)||schedOrderIds.has(o.id));
+      // 套用當前篩選/搜尋,讓小計反映「篩選後的今日範圍」
+      if(filterStatus) todayOrders=todayOrders.filter(o=>o.status===filterStatus);
+      if(filterStaff) todayOrders=todayOrders.filter(o=>o.staff===filterStaff);
+      if(q) todayOrders=todayOrders.filter(o=>{
+        const c=findCustomer(o.phone);
+        const name=(c?.name||'').toLowerCase();
+        const phone=o.phone.toLowerCase();
+        const plate=o.plate.toLowerCase();
+        const date=o.created.toLowerCase();
+        const id=o.id.toLowerCase();
+        return name.includes(q)||phone.includes(q)||plate.includes(q)||date.includes(q)||id.includes(q);
+      });
+      const todayPending=todayOrders.filter(o=>o.status==='pending').length;
+      const todayDoing=todayOrders.filter(o=>o.status==='doing').length;
+      // done/revenue 只算 completedAt 在今日(避免跨日訂單在前後天重複算營業額)
+      const todayDoneOrders=todayOrders.filter(o=>o.status==='done'&&(o.completedAt||o.created).slice(0,10)===today);
+      const todayRevenue=todayDoneOrders.reduce((s,o)=>s+(Number(o.price)||0),0);
+      const totalToday=todayPending+todayDoing+todayDoneOrders.length;
+      // 篩選提示
+      const filters=[];
+      if(filterStaff) filters.push(filterStaff);
+      if(filterStatus) filters.push({pending:'待處理',doing:'進行中',done:'已完成',noshow:'爽約',cancelled:'已取消'}[filterStatus]||filterStatus);
+      if(q) filters.push(`「${q}」`);
+      const filterLabel=filters.length?` (${filters.join(' / ')})`:'';
+      summaryEl.style.display='block';
+      summaryEl.innerHTML=`📊 今日${filterLabel} ${totalToday} 單　·　待處理 ${todayPending}　·　進行中 ${todayDoing}　·　已完成 ${todayDoneOrders.length}　·　$${todayRevenue.toLocaleString()}`;
+    } else {
+      summaryEl.style.display='none';
+    }
+  }
+
   if(!list.length){
     // v3.54: 沒結果時顯示提示 + 載入全部按鈕
-    const hint=(!showHistory && !q && !filterStatus)
-      ? '<div style="margin-top:8px;font-size:12px;color:var(--text3)">目前無今日或未完成的訂單<br>勾選「顯示全部歷史」可查看所有訂單</div>'
+    const hint=isTodayView
+      ? '<div style="margin-top:8px;font-size:12px;color:var(--text3)">目前無今日或未完成的訂單<br>點上方「📅 今日」切換成「📅 全部歷史」可查看所有訂單</div>'
       : '';
     el.innerHTML='<div class="empty" style="padding:32px 0">找不到符合的訂單'+hint+'</div>';
     return;
@@ -3480,6 +3624,9 @@ function renderOrders(){
       <div class="kv"><span class="k">建立時間</span><span class="v" style="color:var(--text3)">${o.created}</span></div>
       ${o.status!=='done'?`<div class="status-sel" style="margin-top:8px"><button class="${o.status==='pending'?'active-pending':''}" onclick="setStatus('${o.id}','pending')">待處理</button><button class="${o.status==='doing'?'active-doing':''}" onclick="setStatus('${o.id}','doing')">進行中</button><button class="${o.status==='done'?'active-done':''}" onclick="setStatus('${o.id}','done')">完成</button><button onclick="cancelOrder('${o.id}')" style="color:#888;font-size:13px;padding:8px 12px;border:none;background:none;cursor:pointer;font-family:inherit;border-left:1px solid var(--border)">取消</button></div>`:''}
       ${o.status==='cancelled'?`<div style="margin-top:8px;padding:10px;background:#F5F5F5;border-radius:var(--radius);font-size:13px;color:#888;text-align:center">已取消 <button onclick="setStatus('${o.id}','pending')" style="color:#185FA5;background:none;border:none;cursor:pointer;font-size:13px;font-family:inherit;margin-left:8px">復原</button></div>`:''}
+      ${o.status==='done'&&!o.deleteRequested?
+        `<button onclick="reopenForEdit('${o.id}')" style="width:100%;margin-top:8px;padding:10px;border-radius:var(--radius);border:1.5px solid var(--green);background:none;color:var(--green-text);font-size:13px;cursor:pointer;font-family:inherit;min-height:44px;font-weight:600">📝 修改/追加項目</button>`
+        :''}
       ${o.deleteRequested?
         `<div style="margin-top:8px;padding:12px;background:#FFF5F5;border-radius:var(--radius);border:1.5px solid #E24B4A">
           <div style="font-size:12px;color:#A32D2D;font-weight:600;margin-bottom:8px">⏳ 申請刪除中，等待店長審核</div>
@@ -4271,6 +4418,162 @@ function copyGhostList(){
   } else {
     fallback();
   }
+}
+
+// ═══ v3.58: 使用頻率審計 ═══
+// 統計各功能在指定天數內的使用次數,幫店長決定砍/留
+function runAudit(days){
+  const out=document.getElementById('audit-result');
+  if(!out) return;
+  const now=new Date();
+  const cutoff=new Date(now.getTime()-days*86400000);
+  const cutoffStr=cutoff.toISOString().slice(0,10);
+  // 範圍內訂單(用 created 判斷)
+  const orders=db.orders.filter(o=>(o.created||'').slice(0,10)>=cutoffStr);
+  const N=orders.length;
+  if(N===0){
+    out.style.display='block';
+    out.innerHTML=`<div style="padding:14px;background:#FFF8E1;border:1px solid #FFB300;border-radius:6px;color:#7A4F00;font-size:13px">這個範圍內沒有訂單資料</div>`;
+    return;
+  }
+
+  // 各項統計
+  const cnt={
+    // 狀態結果
+    done:orders.filter(o=>o.status==='done').length,
+    cancelled:orders.filter(o=>o.status==='cancelled').length,
+    noshow:orders.filter(o=>o.status==='noshow').length,
+    pending:orders.filter(o=>o.status==='pending').length,
+    doing:orders.filter(o=>o.status==='doing').length,
+    // 操作頻率
+    lateMarked:orders.filter(o=>o.lateMarked).length,
+    handoverNote:orders.filter(o=>o.handoverNote&&o.handoverNote.trim()).length,
+    appt:orders.filter(o=>o.appt).length,
+    assistants:orders.filter(o=>(o.assistants||0)>0).length,
+    deleteRequested:orders.filter(o=>o.deleteRequested).length,
+    walletDeducted:orders.filter(o=>o.deducted&&o.payment==='wallet').length,
+    referralDiscount:orders.filter(o=>(o.referralDiscount||0)>0).length,
+    // 跨日
+    crossDay:orders.filter(o=>o.endDate&&o.endDate!==o.created?.slice(0,10)).length,
+    // 沒車牌(走入店場景)
+    noPlate:orders.filter(o=>!o.plate).length,
+    // 多服務
+    multiService:orders.filter(o=>(o.service||'').includes('、')).length,
+  };
+
+  // 預約時段分布(整點 vs 半點)
+  const apptOrders=orders.filter(o=>o.appt);
+  const onHour=apptOrders.filter(o=>o.appt.endsWith(':00')).length;
+  const halfHour=apptOrders.filter(o=>o.appt.endsWith(':30')).length;
+
+  // 新客戶建檔(範圍內建檔)
+  const newCustomers=(db.customers||[]).filter(c=>{
+    // 客戶沒有 created 欄位,用第一張訂單的 created 推測
+    const firstOrder=db.orders.filter(o=>o.phone===c.phone).sort((a,b)=>(a.created||'').localeCompare(b.created||''))[0];
+    return firstOrder&&(firstOrder.created||'').slice(0,10)>=cutoffStr;
+  }).length;
+
+  // 排版輔助
+  function pct(n){return N?Math.round(n*100/N):0;}
+  function tag(level){
+    const map={high:{bg:'#E1F5EE',color:'#085041',text:'必留'},mid:{bg:'#FFF8E1',color:'#7A4F00',text:'觀察'},low:{bg:'#FCEBEB',color:'#791F1F',text:'可砍'}};
+    const t=map[level];
+    return `<span style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:99px;background:${t.bg};color:${t.color}">${t.text}</span>`;
+  }
+  // 判定:用率 >= 30% 必留;5%-30% 觀察;< 5% 可砍
+  function judge(n){
+    const p=pct(n);
+    if(p>=30) return tag('high');
+    if(p>=5) return tag('mid');
+    return tag('low');
+  }
+  function row(label,count,extra){
+    const p=pct(count);
+    const verdict=judge(count);
+    return `<tr style="border-bottom:1px solid var(--border)">
+      <td style="padding:8px 6px;font-size:12px">${label}</td>
+      <td style="padding:8px 6px;font-size:12px;text-align:right;white-space:nowrap"><strong>${count}</strong></td>
+      <td style="padding:8px 6px;font-size:11px;color:var(--text2);text-align:right;white-space:nowrap">${p}%</td>
+      <td style="padding:8px 6px;text-align:center;white-space:nowrap">${verdict}</td>
+      <td style="padding:8px 6px;font-size:11px;color:var(--text2)">${extra||''}</td>
+    </tr>`;
+  }
+
+  // 結果區塊
+  out.style.display='block';
+  out.innerHTML=`
+    <div style="padding:10px;background:var(--bg2);border-radius:6px;margin-bottom:10px;font-size:12px;color:var(--text2)">
+      <strong style="color:var(--text)">範圍:${days===99999?'全部':'最近 '+days+' 天'}</strong>　·　共 ${N} 張訂單　·　新建客戶 ${newCustomers} 位
+    </div>
+
+    <div style="font-size:11px;color:var(--text3);margin-bottom:4px;letter-spacing:0.04em">訂單狀態分布</div>
+    <table style="width:100%;border-collapse:collapse;margin-bottom:14px">
+      <tbody>
+        ${row('完成 (done)',cnt.done,'結帳成功')}
+        ${row('取消 (cancelled)',cnt.cancelled)}
+        ${row('爽約 (noshow)',cnt.noshow)}
+        ${row('待處理 / 進行中',cnt.pending+cnt.doing,'尚未結帳')}
+      </tbody>
+    </table>
+
+    <div style="font-size:11px;color:var(--text3);margin-bottom:4px;letter-spacing:0.04em">功能使用頻率</div>
+    <table style="width:100%;border-collapse:collapse;margin-bottom:14px">
+      <thead>
+        <tr style="border-bottom:1.5px solid var(--border2)">
+          <th style="padding:6px;font-size:10px;text-align:left;color:var(--text3)">功能</th>
+          <th style="padding:6px;font-size:10px;text-align:right;color:var(--text3)">次</th>
+          <th style="padding:6px;font-size:10px;text-align:right;color:var(--text3)">%</th>
+          <th style="padding:6px;font-size:10px;text-align:center;color:var(--text3)">判定</th>
+          <th style="padding:6px;font-size:10px;color:var(--text3)">說明</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${row('預約功能 (appt)',cnt.appt,cnt.appt>0?`整點 ${onHour} / 半點 ${halfHour}`:'')}
+        ${row('多服務同單 (含「、」)',cnt.multiService)}
+        ${row('協助人數 +N',cnt.assistants)}
+        ${row('交接備註 (handoverNote)',cnt.handoverNote)}
+        ${row('遲到標記 (lateMarked)',cnt.lateMarked)}
+        ${row('申請刪除 (deleteRequested)',cnt.deleteRequested)}
+        ${row('錢包扣款 (wallet)',cnt.walletDeducted)}
+        ${row('推薦折抵 (referralDiscount)',cnt.referralDiscount)}
+        ${row('跨日訂單',cnt.crossDay)}
+        ${row('未填車牌建單',cnt.noPlate,'v3.52 新增')}
+      </tbody>
+    </table>
+
+    <div style="padding:10px;background:var(--bg2);border-radius:6px;font-size:11px;color:var(--text2);line-height:1.6">
+      <strong style="color:var(--text)">判定規則</strong>:占比 ≥30% = 🟢 必留　·　5–30% = 🟡 觀察　·　&lt;5% = 🔴 可砍<br>
+      ⚠️ 「可砍」不代表立刻刪除,要先想清楚這個功能是「沒人用」還是「被需要但藏太深」。低使用率也可能是因為入口難找,而不是真的沒人要。
+    </div>
+
+    <button class="btn block" style="margin-top:10px;font-size:12px" onclick="copyAuditReport(${days})">📋 複製報告</button>
+  `;
+}
+
+function copyAuditReport(days){
+  const out=document.getElementById('audit-result');
+  if(!out) return;
+  // 抓表格純文字
+  const tables=out.querySelectorAll('table');
+  let text=`使用頻率審計 — ${days===99999?'全部':'最近 '+days+' 天'}\n\n`;
+  tables.forEach(t=>{
+    t.querySelectorAll('tr').forEach(tr=>{
+      const cells=[...tr.querySelectorAll('th,td')].map(c=>c.textContent.trim()).filter(Boolean);
+      if(cells.length) text+=cells.join('\t')+'\n';
+    });
+    text+='\n';
+  });
+  const fallback=()=>{
+    const ta=document.createElement('textarea');
+    ta.value=text;ta.style.position='fixed';ta.style.opacity='0';
+    document.body.appendChild(ta);ta.select();
+    try{document.execCommand('copy');showToast('已複製審計報告',{duration:1200});}
+    catch(_){showToast('複製失敗',{duration:1500});}
+    document.body.removeChild(ta);
+  };
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(()=>showToast('已複製審計報告',{duration:1200}),fallback);
+  } else fallback();
 }
 
 function clearAllData(){
